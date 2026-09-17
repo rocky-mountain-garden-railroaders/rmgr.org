@@ -226,7 +226,6 @@
 
 <script lang="ts" setup>
 import { reactive, ref } from 'vue'
-import type { ContactFormPayload } from '@/types/contact'
 
 defineOptions({ name: 'ContactUs' })
 
@@ -250,29 +249,18 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   errorMessage.value = ''
   try {
-    if (!formData.subject) {
-      throw new Error('Please select a topic')
-    }
-
-    const payload: ContactFormPayload = {
-      name: formData.name,
-      email: formData.email,
-      subject: formData.subject,
-      message: formData.message,
-    }
-
-    const response = await fetch('/api/contact', {
+    await fetch('https://formspree.io/f/xrpbgrek', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      mode: 'no-cors',
+      body: (() => {
+        const data = new FormData()
+        data.append('name', formData.name)
+        data.append('email', formData.email)
+        data.append('subject', formData.subject ?? '')
+        data.append('message', formData.message)
+        return data
+      })(),
     })
-
-    if (!response.ok) {
-      const result = (await response.json()) as { error?: string }
-      throw new Error(result.error ?? 'Unable to send your message.')
-    }
 
     showSnackbar.value = true
     form.value?.reset()

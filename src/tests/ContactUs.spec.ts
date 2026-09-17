@@ -8,11 +8,12 @@ describe('ContactUs', () => {
     vi.restoreAllMocks()
   })
 
-  it('GIVEN the form is filled WHEN submitted THEN it shows the success snackbar and resets the form', async () => {
+  it('GIVEN the form is filled WHEN submitted THEN it posts to Formspree and resets the form', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({}),
     } as Response)
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>
 
     const wrapper = mount(ContactUs)
 
@@ -31,6 +32,19 @@ describe('ContactUs', () => {
     await (wrapper.vm as unknown as { handleSubmit: () => Promise<void> }).handleSubmit()
     await nextTick()
 
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://formspree.io/f/xrpbgrek',
+      expect.objectContaining({
+        method: 'POST',
+        mode: 'no-cors',
+        body: expect.any(FormData),
+      }),
+    )
+    const formData = fetchMock.mock.calls[0][1].body as FormData
+    expect(formData.get('name')).toBe('Tyler S')
+    expect(formData.get('email')).toBe('tyler@example.com')
+    expect(formData.get('subject')).toBe('General Inquiry')
+    expect(formData.get('message')).toBe('I would like more information about the club.')
     expect(vm.showSnackbar).toBe(true)
     expect(vm.formData).toMatchObject({
       name: '',
@@ -60,7 +74,7 @@ describe('ContactUs', () => {
   it('GIVEN the API returns an error WHEN submitted THEN it shows an error message', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
-      json: async () => ({ error: 'Mail service unavailable' }),
+      json: async () => ({}),
     } as Response)
 
     const wrapper = mount(ContactUs)
@@ -83,6 +97,6 @@ describe('ContactUs', () => {
     await nextTick()
 
     expect(vm.showSnackbar).toBe(false)
-    expect(vm.errorMessage).toBe('Mail service unavailable')
+    expect(vm.errorMessage).toBe('Unable to send your message.')
   })
 })
