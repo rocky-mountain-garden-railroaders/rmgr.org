@@ -181,7 +181,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import highlightImage from '@/assets/images/featured/20090620_1024.jpg'
+import highlightImage from '@/assets/20090620_1024.jpg'
 
 defineOptions({ name: 'AboutUs' })
 
