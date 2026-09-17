@@ -36,15 +36,25 @@ describe('ContactUs', () => {
       'https://formspree.io/f/xrpbgrek',
       expect.objectContaining({
         method: 'POST',
-        mode: 'no-cors',
-        body: expect.any(FormData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: 'Tyler S',
+          email: 'tyler@example.com',
+          subject: 'General Inquiry',
+          message: 'I would like more information about the club.',
+        }),
       }),
     )
-    const formData = fetchMock.mock.calls[0][1].body as FormData
-    expect(formData.get('name')).toBe('Tyler S')
-    expect(formData.get('email')).toBe('tyler@example.com')
-    expect(formData.get('subject')).toBe('General Inquiry')
-    expect(formData.get('message')).toBe('I would like more information about the club.')
+    expect(fetchMock.mock.calls[0][1].body).toBe(
+      JSON.stringify({
+        name: 'Tyler S',
+        email: 'tyler@example.com',
+        subject: 'General Inquiry',
+        message: 'I would like more information about the club.',
+      }),
+    )
     expect(vm.showSnackbar).toBe(true)
     expect(vm.formData).toMatchObject({
       name: '',

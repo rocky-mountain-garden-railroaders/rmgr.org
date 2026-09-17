@@ -249,18 +249,23 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   errorMessage.value = ''
   try {
-    await fetch('https://formspree.io/f/xrpbgrek', {
+    const response = await fetch('https://formspree.io/f/xrpbgrek', {
       method: 'POST',
-      mode: 'no-cors',
-      body: (() => {
-        const data = new FormData()
-        data.append('name', formData.name)
-        data.append('email', formData.email)
-        data.append('subject', formData.subject ?? '')
-        data.append('message', formData.message)
-        return data
-      })(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject ?? '',
+        message: formData.message,
+      }),
     })
+
+    if (!response.ok) {
+      errorMessage.value = 'Unable to send your message.'
+      return
+    }
 
     showSnackbar.value = true
     form.value?.reset()
