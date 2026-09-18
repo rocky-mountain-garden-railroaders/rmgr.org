@@ -5,10 +5,33 @@ import { type CalendarEvent, parseGoogleCalendarIcs } from '@/lib/googleCalendar
 defineOptions({ name: 'UpcomingEvents' })
 
 const eventData = ref<CalendarEvent[]>([])
+const showPastEvents = ref(false)
+
+const isPastEvent = (event: CalendarEvent) => {
+  const cutoff = event.endsAt ?? event.startsAt
+  return Date.parse(cutoff) < Date.now()
+}
 
 const upcomingEvents = computed(() => {
-  return eventData.value
+  return eventData.value.filter((event) => !isPastEvent(event))
 })
+
+const pastEvents = computed(() => {
+  return eventData.value
+    .filter((event) => isPastEvent(event))
+    .slice()
+    .reverse()
+})
+
+const visibleEvents = computed(() => {
+  return showPastEvents.value ? pastEvents.value : upcomingEvents.value
+})
+
+const pageTitle = computed(() => (showPastEvents.value ? 'Past Events' : 'Upcoming Events'))
+
+const togglePastEvents = () => {
+  showPastEvents.value = !showPastEvents.value
+}
 
 const calendarFeedUrl = '/calendar-ics'
 
@@ -29,6 +52,9 @@ onMounted(() => {
 defineExpose({
   eventData,
   upcomingEvents,
+  pastEvents,
+  visibleEvents,
+  showPastEvents,
 })
 </script>
 
@@ -38,13 +64,21 @@ defineExpose({
       <v-col class="bg-surface pa-4 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>
           <v-card-item>
-            <v-card-title class="text-h4 font-weight-black text-primary">
-              Upcoming Events
+            <v-card-title class="text-h4 font-weight-black text-primary pl-0">
+              {{ pageTitle }}
             </v-card-title>
-            <v-card-subtitle class="pa-0 mt-2 text-body-2 text-medium-emphasis">
-              <a class="subscribe-link" :href="calendarFeedUrl" rel="noopener noreferrer" target="_blank">
-                Subscribe to this calendar
+            <v-card-subtitle
+              class="pa-0 mt-2 text-body-2 text-medium-emphasis d-flex align-center flex-wrap"
+              style="column-gap: 2rem; row-gap: 0.5rem"
+            >
+              <a class="subscribe-link d-inline-flex align-center" :href="calendarFeedUrl" rel="noopener noreferrer" target="_blank">
+                <v-icon class="me-1" icon="mdi-calendar" size="16"></v-icon>
+                <span>Subscribe to this calendar</span>
               </a>
+              <button class="past-toggle-btn subscribe-link d-inline-flex align-center" type="button" @click="togglePastEvents">
+                <v-icon class="me-1" :icon="showPastEvents ? 'mdi-calendar-arrow-right' : 'mdi-history'" size="16"></v-icon>
+                <span>{{ showPastEvents ? 'View upcoming events' : 'View past events' }}</span>
+              </button>
             </v-card-subtitle>
           </v-card-item>
         </v-card>
@@ -52,15 +86,21 @@ defineExpose({
 
       <v-col class="bg-primary pa-6 pa-sm-12 rounded-b-lg" cols="12">
         <v-card class="w-100 text-surface" color="transparent" flat>
-          <div v-if="upcomingEvents.length === 0" class="text-center py-12 opacity-70">
-            <div class="text-h6 font-weight-light">No upcoming events scheduled right now.</div>
+          <div v-if="visibleEvents.length === 0" class="text-center py-12 opacity-70">
+            <div class="text-h6 font-weight-light">
+              {{
+                showPastEvents
+                  ? 'No past events to show.'
+                  : 'No upcoming events scheduled right now.'
+              }}
+            </div>
             <div class="text-body-2 opacity-80 mt-1">
               Check back soon or send us a message via our contact page!
             </div>
           </div>
 
           <div v-else>
-            <div v-for="(event, index) in upcomingEvents" :key="index">
+            <div v-for="(event, index) in visibleEvents" :key="index">
               <component
                 :is="event.url ? 'a' : 'div'"
                 :aria-label="event.url ? `Open ${event.title}` : undefined"
@@ -115,7 +155,7 @@ defineExpose({
               </component>
 
               <v-divider
-                v-if="index < upcomingEvents.length - 1"
+                v-if="index < visibleEvents.length - 1"
                 class="my-6 opacity-10"
                 color="surface"
               ></v-divider>
@@ -187,8 +227,21 @@ defineExpose({
 
 .subscribe-link {
   color: inherit;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+}
+
+.subscribe-link span {
   text-decoration: underline;
   text-underline-offset: 0.18em;
+}
+
+.past-toggle-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
 }
 
 @media (max-width: 960px) {

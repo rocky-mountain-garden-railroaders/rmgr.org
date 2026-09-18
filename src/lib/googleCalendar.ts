@@ -7,6 +7,8 @@ export type CalendarEvent = {
   titleLink?: string
   url?: string
   highlight?: boolean
+  startsAt: string
+  endsAt?: string
 }
 
 const formatDate = (value: string) =>
@@ -44,6 +46,8 @@ export const mapGoogleCalendarFeedToEvents = (items: Array<any>): CalendarEvent[
       location,
       description,
       url,
+      startsAt: new Date(start).toISOString(),
+      endsAt: end ? new Date(end).toISOString() : undefined,
     }
   })
 }
@@ -202,6 +206,8 @@ export const parseGoogleCalendarIcs = (ics: string): CalendarEvent[] => {
             description,
             titleLink,
             url: current.URL ?? titleLink,
+            startsAt: occurrence.start.toISOString(),
+            endsAt: occurrence.end?.toISOString(),
           })
         }
       }
@@ -223,5 +229,5 @@ export const parseGoogleCalendarIcs = (ics: string): CalendarEvent[] => {
     current[normalizedKey] = value
   }
 
-  return events.sort((a, b) => Date.parse(a.date) - Date.parse(b.date))
+  return events.sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
 }
