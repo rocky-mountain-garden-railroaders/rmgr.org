@@ -10,8 +10,8 @@
           </v-card-item>
 
           <v-card-text class="pa-0 text-body-1 text-on-surface">
-            <v-row align="center" class="mb-2">
-              <v-col class="pe-md-6 mb-4 mb-md-0" cols="12" md="7">
+            <v-row class="mb-2" align="center">
+              <v-col class="pe-md-6 mb-4 mb-md-0" cols="12" md="6">
                 <p class="mb-4">
                   Welcome to the Rocky Mountain Garden Railroaders (RMGR)! We are a passionate
                   community of G-Gauge model railroaders based in
@@ -27,7 +27,7 @@
                 </p>
               </v-col>
 
-              <v-col cols="12" md="5">
+              <v-col cols="12" md="6">
                 <div class="content-image-frame elevation-4">
                   <img
                     :src="highlightImage"
@@ -62,7 +62,7 @@
                 </p>
               </v-col>
 
-              <v-col cols="12" md="5">
+              <v-col cols="12" md="6">
                 <div class="text-h6 font-weight-bold text-primary mb-2">
                   A Family-Friendly Hobby
                 </div>
@@ -136,7 +136,7 @@
               </div>
             </v-col>
 
-            <v-col cols="12" md="5">
+            <v-col cols="12" md="6">
               <div class="text-h5 font-weight-bold mb-4">Our Aims & Objectives</div>
 
               <div
@@ -169,7 +169,7 @@
                 flat
                 size="large"
               >
-                Get Started
+                Contact Us
               </v-btn>
             </v-col>
           </v-row>
