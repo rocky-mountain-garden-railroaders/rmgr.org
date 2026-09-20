@@ -90,8 +90,6 @@ defineOptions({ name: 'GScaleInfo' })
               </p>
             </v-col>
           </v-row>
-
-          <v-divider class="my-8 opacity-10" color="surface"></v-divider>
         </v-card>
       </v-col>
     </v-row>
