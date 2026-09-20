@@ -1,5 +1,5 @@
 <template>
-  <v-container class="pa-8 bg-background" fluid>
+  <v-container class="pa-4 pa-sm-8 bg-background" fluid>
     <v-row justify="center" no-gutters>
       <v-col class="bg-surface pa-6 pa-sm-12 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>

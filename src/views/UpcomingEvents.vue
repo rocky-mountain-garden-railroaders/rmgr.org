@@ -33,7 +33,7 @@ defineExpose({
 </script>
 
 <template>
-  <v-container class="pa-8 bg-background" fluid style="width: 1650px">
+  <v-container class="pa-8 bg-background" fluid>
     <v-row no-gutters>
       <v-col class="bg-surface pa-4 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>
@@ -85,6 +85,12 @@ defineExpose({
                       <h3 class="event-title text-h5 font-weight-bold tracking-tight">
                         {{ event.title }}
                       </h3>
+                      <v-icon
+                        v-if="event.url"
+                        class="event-title-icon event-title-icon--inline text-secondary"
+                        icon="mdi-open-in-new"
+                        size="24"
+                      ></v-icon>
                     </div>
                     <div class="event-location text-body-1 opacity-80 font-weight-light">
                       {{ event.location }}
@@ -97,12 +103,7 @@ defineExpose({
                     </p>
                   </v-col>
 
-                  <v-col
-                    class="d-flex align-center justify-end event-action-col"
-                    cols="12"
-                    md="1"
-                    sm="3"
-                  >
+                  <v-col class="d-flex align-center justify-end event-action-col" cols="12" md="1" sm="3">
                     <v-icon
                       v-if="event.url"
                       class="event-title-icon text-secondary"
@@ -180,9 +181,29 @@ defineExpose({
   opacity: 0.95;
 }
 
+.event-title-icon--inline {
+  display: none;
+}
+
 .subscribe-link {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 0.18em;
+}
+
+@media (max-width: 960px) {
+  .event-meta-col {
+    max-width: none;
+  }
+
+  .event-action-col {
+    display: none !important;
+  }
+
+  .event-title-icon--inline {
+    display: inline-flex;
+    padding-left: 4px;
+    margin-top: 2px;
+  }
 }
 </style>

@@ -1,21 +1,6 @@
 <template>
   <v-app>
-    <header>
-      <v-navigation-drawer border="md" class="nav-drawer">
-        <img alt="Vue logo" height="125" src="./assets/logo.png" width="125" />
-        <v-list-item
-          v-for="item in navItems"
-          :key="item.title"
-          :to="item.to"
-          border="sm"
-          class="v-list-item"
-          color="white"
-          link
-        >
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
-        </v-list-item>
-      </v-navigation-drawer>
-    </header>
+    <Navbar />
 
     <v-main>
       <router-view v-slot="{ Component }">
@@ -28,38 +13,10 @@
 </template>
 
 <script lang="ts" setup>
-const navItems = [
-  { title: 'About Us', to: '/' },
-  { title: 'G-Scale Model Railroading', to: '/g-scale' },
-  { title: 'Upcoming Events', to: '/events' },
-  { title: 'Image Gallery', to: '/gallery' },
-  { title: 'Resources', to: '/resources' },
-  { title: 'Contact Us', to: '/contactUs' },
-]
+import Navbar from '@/components/Navbar.vue'
 </script>
 
 <style scoped>
-header {
-  line-height: 1.5;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-}
-
-.nav-drawer {
-  background-color: rgb(var(--v-theme-on-surface));
-  text-align: center;
-}
-
-.v-list-item {
-  color: white;
-}
-
 body {
   padding: 0;
   margin: 0;
