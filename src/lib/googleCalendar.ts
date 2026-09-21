@@ -270,8 +270,11 @@ export const parseGoogleCalendarIcs = (ics: string): CalendarEvent[] => {
         const startValue = current.DTSTART
         const endValue = current.DTEND
         const isAllDay = /^\d{8}$/.test(startValue)
-        const startTimeZone = current.DTSTART_TZID ?? 'UTC'
-        const endTimeZone = current.DTEND_TZID ?? 'UTC'
+        // parseIcsDate defaults an omitted TZID to CALENDAR_TIME_ZONE for
+        // date-only (all-day) values, and to UTC for timed values. Mirror
+        // that here so recurrence expansion re-derives the same instants.
+        const startTimeZone = current.DTSTART_TZID ?? (isAllDay ? CALENDAR_TIME_ZONE : 'UTC')
+        const endTimeZone = current.DTEND_TZID ?? startTimeZone
         const start = parseIcsDate(startValue, current.DTSTART_TZID)
         const end = endValue ? parseIcsDate(endValue, current.DTEND_TZID) : undefined
         const rule = parseRrule(current.RRULE)

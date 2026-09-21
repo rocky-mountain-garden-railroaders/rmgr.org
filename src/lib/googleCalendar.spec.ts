@@ -209,4 +209,38 @@ END:VCALENDAR`)
       time: 'All day',
     })
   })
+
+  it('GIVEN a recurring all-day event with no TZID WHEN an occurrence crosses the Edmonton DST transition THEN it still renders the correct local date', () => {
+    const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:All-day Monthly Meeting
+DTSTART;VALUE=DATE:20260917
+DTEND;VALUE=DATE:20260918
+RRULE:FREQ=MONTHLY;BYDAY=3TH
+LOCATION:Clubhouse
+DESCRIPTION:All day recurring event
+END:VEVENT
+END:VCALENDAR`)
+
+    expect(events).toHaveLength(12)
+    expect(events[0]).toMatchObject({
+      date: 'September 17, 2026',
+      time: 'All day',
+      // Edmonton is on MDT (UTC-6) in September, so local midnight is
+      // 06:00 UTC.
+      startsAt: '2026-09-17T06:00:00.000Z',
+    })
+    // November 19, 2026 is after the America/Edmonton DST-to-standard
+    // transition (Nov 1, 2026). Treating the default timezone as UTC
+    // instead of America/Edmonton would compute local midnight using the
+    // September UTC offset, landing on 23:00 the previous day once
+    // formatted back in America/Edmonton - rendering as November 18.
+    expect(events[2]).toMatchObject({
+      date: 'November 19, 2026',
+      time: 'All day',
+      // Edmonton is on MST (UTC-7) in November, so local midnight is
+      // 07:00 UTC - a different offset than the September occurrence.
+      startsAt: '2026-11-19T07:00:00.000Z',
+    })
+  })
 })
