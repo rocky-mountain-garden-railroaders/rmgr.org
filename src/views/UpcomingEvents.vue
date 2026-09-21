@@ -70,7 +70,7 @@ defineExpose({
 </script>
 
 <template>
-  <v-container class="pa-8 bg-background" fluid style="width: 1650px">
+  <v-container class="pa-8 bg-background" fluid>
     <v-row no-gutters>
       <v-col class="bg-surface pa-4 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>
@@ -97,81 +97,83 @@ defineExpose({
 
       <v-col class="bg-primary pa-6 pa-sm-12 rounded-b-lg" cols="12">
         <v-card class="w-100 text-surface" color="transparent" flat>
-          <div v-if="visibleEvents.length === 0" class="text-center py-12 opacity-70">
-            <div class="text-h6 font-weight-light">
-              {{
-                showPastEvents
-                  ? 'No past events to show.'
-                  : 'No upcoming events scheduled right now.'
-              }}
+          <transition mode="out-in" name="events-fade">
+            <div v-if="visibleEvents.length === 0" :key="`empty-${showPastEvents}`" class="text-center py-12 opacity-70">
+              <div class="text-h6 font-weight-light">
+                {{
+                  showPastEvents
+                    ? 'No past events to show.'
+                    : 'No upcoming events scheduled right now.'
+                }}
+              </div>
+              <div class="text-body-2 opacity-80 mt-1">
+                Check back soon or send us a message via our contact page!
+              </div>
             </div>
-            <div class="text-body-2 opacity-80 mt-1">
-              Check back soon or send us a message via our contact page!
-            </div>
-          </div>
 
-          <div v-else>
-            <div v-for="(event, index) in visibleEvents" :key="index">
-              <component
-                :is="event.url ? 'a' : 'div'"
-                :aria-label="event.url ? `Open ${event.title}` : undefined"
-                :class="{ 'event-card--clickable': !!event.url }"
-                :href="event.url || undefined"
-                :rel="event.url ? 'noopener noreferrer' : undefined"
-                :target="event.url ? '_blank' : undefined"
-                class="event-card d-block text-decoration-none text-inherit"
-              >
-                <v-row align="center" class="event-row">
-                  <v-col class="event-meta-col" cols="12" md="2.5" sm="3">
-                    <div class="event-date text-secondary font-weight-bold mb-1">
-                      {{ event.date }}
-                    </div>
-                    <div class="event-time text-body-1 font-weight-light opacity-80">
-                      {{ event.time }}
-                    </div>
-                  </v-col>
+            <div v-else :key="`events-${showPastEvents}`">
+              <div v-for="(event, index) in visibleEvents" :key="index">
+                <component
+                  :is="event.url ? 'a' : 'div'"
+                  :aria-label="event.url ? `Open ${event.title}` : undefined"
+                  :class="{ 'event-card--clickable': !!event.url }"
+                  :href="event.url || undefined"
+                  :rel="event.url ? 'noopener noreferrer' : undefined"
+                  :target="event.url ? '_blank' : undefined"
+                  class="event-card d-block text-decoration-none text-inherit"
+                >
+                  <v-row align="center" class="event-row">
+                    <v-col class="event-meta-col" cols="12" md="2.5" sm="3">
+                      <div class="event-date text-secondary font-weight-bold mb-1">
+                        {{ event.date }}
+                      </div>
+                      <div class="event-time text-body-1 font-weight-light opacity-80">
+                        {{ event.time }}
+                      </div>
+                    </v-col>
 
-                  <v-col cols="12" md="8" sm="9">
-                    <div class="d-flex align-center flex-wrap gap-2 mb-1">
-                      <h3 class="event-title text-h5 font-weight-bold tracking-tight">
-                        {{ event.title }}
-                      </h3>
+                    <v-col cols="12" md="8" sm="9">
+                      <div class="d-flex align-center flex-wrap gap-2 mb-1">
+                        <h3 class="event-title text-h5 font-weight-bold tracking-tight">
+                          {{ event.title }}
+                        </h3>
+                        <v-icon
+                          v-if="event.url"
+                          class="event-title-icon event-title-icon--inline text-secondary"
+                          icon="mdi-open-in-new"
+                          size="24"
+                        ></v-icon>
+                      </div>
+                      <div class="event-location text-body-1 opacity-80 font-weight-light">
+                        {{ event.location }}
+                      </div>
+                      <p
+                        v-if="event.description"
+                        class="body-copy text-body-1 font-weight-light opacity-90"
+                      >
+                        {{ event.description }}
+                      </p>
+                    </v-col>
+
+                    <v-col class="d-flex align-center justify-end event-action-col" cols="12" md="1" sm="3">
                       <v-icon
                         v-if="event.url"
-                        class="event-title-icon event-title-icon--inline text-secondary"
+                        class="event-title-icon text-secondary"
                         icon="mdi-open-in-new"
-                        size="24"
+                        size="32"
                       ></v-icon>
-                    </div>
-                    <div class="event-location text-body-1 opacity-80 font-weight-light">
-                      {{ event.location }}
-                    </div>
-                    <p
-                      v-if="event.description"
-                      class="body-copy text-body-1 font-weight-light opacity-90"
-                    >
-                      {{ event.description }}
-                    </p>
-                  </v-col>
+                    </v-col>
+                  </v-row>
+                </component>
 
-                  <v-col class="d-flex align-center justify-end event-action-col" cols="12" md="1" sm="3">
-                    <v-icon
-                      v-if="event.url"
-                      class="event-title-icon text-secondary"
-                      icon="mdi-open-in-new"
-                      size="32"
-                    ></v-icon>
-                  </v-col>
-                </v-row>
-              </component>
-
-              <v-divider
-                v-if="index < visibleEvents.length - 1"
-                class="my-6 opacity-10"
-                color="surface"
-              ></v-divider>
+                <v-divider
+                  v-if="index < visibleEvents.length - 1"
+                  class="my-6 opacity-10"
+                  color="surface"
+                ></v-divider>
+              </div>
             </div>
-          </div>
+          </transition>
         </v-card>
       </v-col>
     </v-row>
@@ -179,6 +181,16 @@ defineExpose({
 </template>
 
 <style scoped>
+.events-fade-enter-active,
+.events-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.events-fade-enter-from,
+.events-fade-leave-to {
+  opacity: 0;
+}
+
 .event-date {
   letter-spacing: 0.04em;
   font-size: 1.125rem;

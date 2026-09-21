@@ -40,9 +40,26 @@ END:VCALENDAR`)
       title: 'RMGR Monthly Meeting',
       date: 'September 17, 2026',
       time: '7:15 PM - 8:45 PM',
+      // September is MDT (UTC-6): 19:15 local == 01:15 UTC the next day.
+      startsAt: '2026-09-18T01:15:00.000Z',
     })
+    // October 2026's 3rd Thursday is the 15th, not the 17th - a naive
+    // "add one calendar month to the same day-of-month" expansion would
+    // wrongly keep the 17th.
     expect(events[1]).toMatchObject({
-      date: 'October 17, 2026',
+      date: 'October 15, 2026',
+      time: '7:15 PM - 8:45 PM',
+    })
+    // November 19, 2026 falls after the America/Edmonton DST-to-standard
+    // transition (Nov 1, 2026). The local wall-clock time must still read
+    // 7:15 PM - 8:45 PM even though the UTC offset changed from the
+    // September/October occurrences.
+    expect(events[2]).toMatchObject({
+      date: 'November 19, 2026',
+      time: '7:15 PM - 8:45 PM',
+      // November is MST (UTC-7): 19:15 local == 02:15 UTC the next day,
+      // a different UTC offset than the September occurrence above.
+      startsAt: '2026-11-20T02:15:00.000Z',
     })
   })
 

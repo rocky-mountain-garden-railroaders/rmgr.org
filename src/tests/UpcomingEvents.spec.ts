@@ -71,7 +71,8 @@ END:VCALENDAR`,
       titleLink: undefined,
     })
     expect(eventData[1]).toMatchObject({
-      date: 'October 17, 2026',
+      // October 2026's 3rd Thursday is the 15th, not the 17th.
+      date: 'October 15, 2026',
     })
     expect(rows[0].text()).toBe(eventData[0].title)
     expect(rows[1].text()).toBe(eventData[1].title)
