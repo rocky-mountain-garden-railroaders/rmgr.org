@@ -70,7 +70,7 @@ defineExpose({
 </script>
 
 <template>
-  <v-container class="pa-8 bg-background" fluid>
+  <v-container class="pa-8 bg-background" fluid style="width: 1650px">
     <v-row no-gutters>
       <v-col class="bg-surface pa-4 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>
