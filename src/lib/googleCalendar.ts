@@ -11,6 +11,54 @@ export type CalendarEvent = {
   endsAt?: string
 }
 
+const CALENDAR_TIME_ZONE = 'America/Edmonton'
+
+const zonedTimeToUtc = (
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+  timeZone: string,
+) => {
+  const localUtc = Date.UTC(year, month, day, hour, minute, second)
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+
+  const target = new Date(localUtc)
+  const parts = Object.fromEntries(
+    dtf.formatToParts(target).map((part) => [part.type, part.value]),
+  ) as Record<string, string>
+
+  const tzUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    parts.hour === '24' ? 0 : Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second),
+  )
+  const offset = localUtc - tzUtc
+  return new Date(localUtc + offset)
+}
+
+// Parses a Google Calendar "date-only" value (YYYY-MM-DD, used for all-day
+// events) as local midnight in the calendar's timezone rather than UTC
+// midnight, so the exclusive end date lines up with the local day boundary.
+const dateOnlyToInstant = (value: string, timeZone: string) => {
+  const [year, month, day] = value.split('-').map(Number)
+  return zonedTimeToUtc(year, month - 1, day, 0, 0, 0, timeZone)
+}
+
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat('en-CA', {
     month: 'long',
@@ -33,21 +81,31 @@ const formatTime = (start: string, end?: string) => {
 export const mapGoogleCalendarFeedToEvents = (items: Array<any>): CalendarEvent[] => {
   return items.map((item) => {
     const title = item.summary ?? 'Untitled event'
+    const isAllDay = !item.start?.dateTime
     const start = item.start?.dateTime ?? item.start?.date
     const end = item.end?.dateTime ?? item.end?.date
     const location = item.location ?? 'TBD'
     const description = item.description ?? ''
     const url = item.htmlLink ?? item.url
 
+    const startInstant = isAllDay
+      ? dateOnlyToInstant(start, CALENDAR_TIME_ZONE)
+      : new Date(start)
+    const endInstant = end
+      ? isAllDay
+        ? dateOnlyToInstant(end, CALENDAR_TIME_ZONE)
+        : new Date(end)
+      : undefined
+
     return {
       title,
       date: formatDate(start),
-      time: item.start?.dateTime ? formatTime(start, end) : 'All day',
+      time: isAllDay ? 'All day' : formatTime(start, end),
       location,
       description,
       url,
-      startsAt: new Date(start).toISOString(),
-      endsAt: end ? new Date(end).toISOString() : undefined,
+      startsAt: startInstant.toISOString(),
+      endsAt: endInstant?.toISOString(),
     }
   })
 }
@@ -57,10 +115,13 @@ const parseIcsDate = (value: string, timeZone?: string) => {
   const compact = parsed.replace(/Z$/, '').replace(/^.*:/, '')
 
   if (/^\d{8}$/.test(compact)) {
+    // Date-only VALUE=DATE (all-day events) have no explicit offset. Anchor
+    // to the calendar's timezone rather than UTC so the local day boundary
+    // (used for the exclusive DTEND) doesn't shift by several hours.
     const year = Number(compact.slice(0, 4))
     const month = Number(compact.slice(4, 6)) - 1
     const day = Number(compact.slice(6, 8))
-    return new Date(Date.UTC(year, month, day))
+    return zonedTimeToUtc(year, month, day, 0, 0, 0, timeZone ?? CALENDAR_TIME_ZONE)
   }
 
   const year = Number(compact.slice(0, 4))

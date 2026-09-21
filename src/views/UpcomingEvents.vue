@@ -1,5 +1,5 @@
 ﻿<script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { type CalendarEvent, parseGoogleCalendarIcs } from '@/lib/googleCalendar'
 
 defineOptions({ name: 'UpcomingEvents' })
@@ -7,9 +7,15 @@ defineOptions({ name: 'UpcomingEvents' })
 const eventData = ref<CalendarEvent[]>([])
 const showPastEvents = ref(false)
 
+// Date.now() alone isn't reactive, so without this the upcoming/past split
+// would only re-evaluate when some other reactive value changed. Refresh
+// `now` on an interval so events reclassify as they end while the page stays open.
+const now = ref(Date.now())
+let nowTimer: ReturnType<typeof setInterval> | undefined
+
 const isPastEvent = (event: CalendarEvent) => {
   const cutoff = event.endsAt ?? event.startsAt
-  return Date.parse(cutoff) < Date.now()
+  return Date.parse(cutoff) < now.value
 }
 
 const upcomingEvents = computed(() => {
@@ -47,6 +53,13 @@ const loadCalendarEvents = async () => {
 
 onMounted(() => {
   void loadCalendarEvents()
+  nowTimer = setInterval(() => {
+    now.value = Date.now()
+  }, 60_000)
+})
+
+onUnmounted(() => {
+  if (nowTimer) clearInterval(nowTimer)
 })
 
 defineExpose({
@@ -55,6 +68,7 @@ defineExpose({
   pastEvents,
   visibleEvents,
   showPastEvents,
+  now,
 })
 </script>
 
