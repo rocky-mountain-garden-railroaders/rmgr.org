@@ -29,5 +29,7 @@ coverage
 
 *.tsbuildinfo
 
+/public/calendar-ics
+
 test-results/
 playwright-report/

@@ -61,12 +61,14 @@ const formatDate = (value: string) =>
     month: 'long',
     day: '2-digit',
     year: 'numeric',
+    timeZone: CALENDAR_TIME_ZONE,
   }).format(new Date(value))
 
 const formatTime = (start: string, end?: string) => {
   const timeFormatter = new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: CALENDAR_TIME_ZONE,
   })
 
   const startTime = timeFormatter.format(new Date(start))
