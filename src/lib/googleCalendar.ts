@@ -213,6 +213,7 @@ export const parseGoogleCalendarIcs = (ics: string): CalendarEvent[] => {
       if (current?.DTSTART) {
         const startValue = current.DTSTART
         const endValue = current.DTEND
+        const isAllDay = /^\d{8}$/.test(startValue)
         const start = parseIcsDate(startValue, current.DTSTART_TZID)
         const end = endValue ? parseIcsDate(endValue, current.DTEND_TZID) : undefined
         const occurrences = parseRrule(current.RRULE)
@@ -229,9 +230,10 @@ export const parseGoogleCalendarIcs = (ics: string): CalendarEvent[] => {
           events.push({
             title: current.SUMMARY ?? 'Untitled event',
             date: formatDate(occurrence.start.toISOString()),
-            time: occurrence.end
-              ? formatTime(occurrence.start.toISOString(), occurrence.end.toISOString())
-              : 'All day',
+            time:
+              isAllDay || !occurrence.end
+                ? 'All day'
+                : formatTime(occurrence.start.toISOString(), occurrence.end.toISOString()),
             location: current.LOCATION ?? 'TBD',
             description,
             titleLink,

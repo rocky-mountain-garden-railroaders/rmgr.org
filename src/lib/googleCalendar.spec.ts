@@ -174,4 +174,22 @@ END:VCALENDAR`)
       time: 'All day',
     })
   })
+
+  it('GIVEN an all-day ICS event with DTEND;VALUE=DATE WHEN parsing THEN it shows All day instead of a time range', () => {
+    const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Family Day
+DTSTART;VALUE=DATE:20260917
+DTEND;VALUE=DATE:20260918
+LOCATION:Clubhouse
+DESCRIPTION:All day event
+END:VEVENT
+END:VCALENDAR`)
+
+    expect(events[0]).toMatchObject({
+      title: 'Family Day',
+      date: 'September 17, 2026',
+      time: 'All day',
+    })
+  })
 })
