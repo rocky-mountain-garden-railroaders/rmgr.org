@@ -7,9 +7,6 @@ defineOptions({ name: 'UpcomingEvents' })
 const eventData = ref<CalendarEvent[]>([])
 const showPastEvents = ref(false)
 
-// Date.now() alone isn't reactive, so without this the upcoming/past split
-// would only re-evaluate when some other reactive value changed. Refresh
-// `now` on an interval so events reclassify as they end while the page stays open.
 const now = ref(Date.now())
 let nowTimer: ReturnType<typeof setInterval> | undefined
 
