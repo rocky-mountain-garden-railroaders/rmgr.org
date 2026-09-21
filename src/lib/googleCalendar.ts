@@ -98,7 +98,7 @@ export const mapGoogleCalendarFeedToEvents = (items: Array<any>): CalendarEvent[
 
     return {
       title,
-      date: formatDate(start),
+      date: formatDate(startInstant.toISOString()),
       time: isAllDay ? 'All day' : formatTime(start, end),
       location,
       description,

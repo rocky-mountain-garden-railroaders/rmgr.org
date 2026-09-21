@@ -1,31 +1,83 @@
-// Downloads the club's public Google Calendar ICS feed into public/calendar-ics
-// so that it is bundled as a static asset in the production build. GitHub
-// Pages serves the built site as static files with no backend or dev-server
-// proxy, so the app can't rely on Vite's `/calendar-ics` proxy (used only for
-// `vite dev`) to reach Google Calendar at runtime. This script runs before
-// every build (see the "prebuild" npm script) to fetch a fresh snapshot of
-// the feed and write it to the same path the app already requests.
-import { mkdir, writeFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { CALENDAR_ICS_URL } from '../calendarSource.mjs'
 
-const outputDir = fileURLToPath(new URL('../public', import.meta.url))
-const outputPath = join(outputDir, 'calendar-ics')
+const scriptsDir = new URL('.', import.meta.url).pathname
+const outputPath = join(scriptsDir, '..', 'public', 'calendar-ics')
+// Checked into git so a fresh checkout still has something to serve if the
+// live feed is unreachable at build time. Refreshed on every successful fetch.
+const fallbackPath = join(scriptsDir, 'calendar-ics.fallback.ics')
 
-const run = async () => {
-  const response = await fetch(CALENDAR_ICS_URL)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch calendar ICS feed: ${response.status} ${response.statusText}`)
+const MAX_ATTEMPTS = 3
+const TIMEOUT_MS = 10_000
+const RETRY_DELAY_MS = 2_000
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export const fetchIcs = async ({
+  url = CALENDAR_ICS_URL,
+  fetchImpl = fetch,
+  timeoutMs = TIMEOUT_MS,
+} = {}) => {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetchImpl(url, { signal: controller.signal })
+    if (!response.ok) {
+      throw new Error(`Failed to fetch calendar ICS feed: ${response.status} ${response.statusText}`)
+    }
+    return await response.text()
+  } finally {
+    clearTimeout(timeout)
   }
-
-  const ics = await response.text()
-  await mkdir(dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, ics, 'utf-8')
-  console.log(`Wrote calendar ICS feed to ${outputPath}`)
 }
 
-run().catch((error) => {
-  console.error(error)
-  process.exit(1)
-})
+export const fetchIcsWithRetries = async ({
+  maxAttempts = MAX_ATTEMPTS,
+  retryDelayMs = RETRY_DELAY_MS,
+  sleepImpl = sleep,
+  ...fetchOptions
+} = {}) => {
+  let lastError
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await fetchIcs(fetchOptions)
+    } catch (error) {
+      lastError = error
+      console.warn(`Attempt ${attempt}/${maxAttempts} to fetch calendar ICS feed failed: ${error.message}`)
+      if (attempt < maxAttempts) await sleepImpl(retryDelayMs * attempt)
+    }
+  }
+  throw lastError
+}
+
+export const run = async ({
+  outputPath: destPath = outputPath,
+  fallbackPath: snapshotPath = fallbackPath,
+  ...retryOptions
+} = {}) => {
+  await mkdir(dirname(destPath), { recursive: true })
+
+  try {
+    const ics = await fetchIcsWithRetries(retryOptions)
+    await writeFile(destPath, ics, 'utf-8')
+    await writeFile(snapshotPath, ics, 'utf-8')
+    console.log(`Wrote calendar ICS feed to ${destPath}`)
+  } catch (error) {
+    console.error(`Falling back to last known calendar ICS snapshot: ${error.message}`)
+    const fallback = await readFile(snapshotPath, 'utf-8').catch(() => {
+      throw new Error('No fallback calendar ICS snapshot is available; failing build.')
+    })
+    await writeFile(destPath, fallback, 'utf-8')
+    console.warn(`Wrote stale fallback calendar ICS feed to ${destPath}`)
+  }
+}
+
+const isMainModule = process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').href
+
+if (isMainModule) {
+  run().catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseGoogleCalendarIcs } from './googleCalendar'
+import { mapGoogleCalendarFeedToEvents, parseGoogleCalendarIcs } from './googleCalendar'
 
 describe('googleCalendar', () => {
   it('GIVEN ICS text WHEN parsing THEN it returns calendar events', () => {
@@ -156,6 +156,22 @@ END:VCALENDAR`)
       titleLink: 'https://www.calgaryzoo.com/news/zoolights2026/',
       url: 'https://www.calgaryzoo.com/news/zoolights2026/',
       description: '',
+    })
+  })
+
+  it('GIVEN an all-day feed event WHEN mapping THEN the displayed date matches the calendar-local start day', () => {
+    const events = mapGoogleCalendarFeedToEvents([
+      {
+        summary: 'Family Day',
+        start: { date: '2026-09-17' },
+        end: { date: '2026-09-18' },
+        location: 'TBD',
+      },
+    ])
+
+    expect(events[0]).toMatchObject({
+      date: 'September 17, 2026',
+      time: 'All day',
     })
   })
 })
