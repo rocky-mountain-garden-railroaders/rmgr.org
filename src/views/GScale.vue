@@ -5,7 +5,7 @@ defineOptions({ name: 'GScaleInfo' })
 </script>
 
 <template>
-  <v-container class="pa-8 bg-background" fluid>
+  <v-container class="pa-4 pa-sm-8 bg-background" fluid>
     <v-row justify="center" no-gutters>
       <v-col class="bg-surface pa-6 pa-sm-12 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>
@@ -87,25 +87,6 @@ defineOptions({ name: 'GScaleInfo' })
                 Many modern trains feature onboard digital sound profiles, synchronized steam smoke
                 generation, and directional lighting rigs that deliver an ultra-realistic scale
                 operational experience.
-              </p>
-            </v-col>
-          </v-row>
-
-          <v-divider class="my-8 opacity-10" color="surface"></v-divider>
-
-          <v-row>
-            <v-col cols="12">
-              <div class="text-h5 font-weight-bold mb-2">Want to Learn More?</div>
-              <p class="body-copy text-body-1 font-weight-light opacity-90">
-                For official international modeling standards, track clearances, and code
-                guidelines, explore the comprehensive resources provided by the
-                <a
-                  class="text-secondary font-weight-medium text-decoration-underline"
-                  href="https://www.nmra.org"
-                  rel="noopener"
-                  target="_blank"
-                  >National Model Railroad Association Website</a
-                >.
               </p>
             </v-col>
           </v-row>

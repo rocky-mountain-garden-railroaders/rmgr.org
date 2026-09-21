@@ -104,7 +104,7 @@
           <v-divider class="mb-8 opacity-10" color="surface"></v-divider>
 
           <v-row align="center">
-            <v-col class="pe-sm-6" cols="12" sm="6">
+            <v-col class="pe-sm-6 mb-4 mb-md-0" cols="12" md="6">
               <div class="d-flex align-start">
                 <div>
                   <div class="d-flex align-center ga-2 mb-1">
@@ -125,7 +125,7 @@
               </div>
             </v-col>
 
-            <v-col cols="12" md="6" sm="6">
+            <v-col cols="12" md="6">
               <v-responsive :aspect-ratio="4 / 3" class="rounded-lg elevation-2 bg-surface w-100">
                 <iframe
                   height="100%"
@@ -142,7 +142,7 @@
           <v-divider class="my-8 opacity-10" color="surface"></v-divider>
 
           <v-row align="center" class="mb-6">
-            <v-col class="pe-sm-6" cols="12" sm="6">
+            <v-col class="pe-sm-6 mb-4 mb-md-0" cols="12" md="6">
               <div class="d-flex align-start">
                 <div>
                   <div class="d-flex align-center ga-2 mb-1">
@@ -163,7 +163,7 @@
               </div>
             </v-col>
 
-            <v-col class="pt-4" cols="12" md="6" sm="6">
+            <v-col class="pt-4" cols="12" md="6">
               <v-responsive :aspect-ratio="16 / 9" class="rounded-lg elevation-2 bg-surface w-100">
                 <iframe
                   height="100%"
@@ -226,7 +226,6 @@
 
 <script lang="ts" setup>
 import { reactive, ref } from 'vue'
-import type { ContactFormPayload } from '@/types/contact'
 
 defineOptions({ name: 'ContactUs' })
 
@@ -250,28 +249,22 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   errorMessage.value = ''
   try {
-    if (!formData.subject) {
-      throw new Error('Please select a topic')
-    }
-
-    const payload: ContactFormPayload = {
-      name: formData.name,
-      email: formData.email,
-      subject: formData.subject,
-      message: formData.message,
-    }
-
-    const response = await fetch('/api/contact', {
+    const response = await fetch('https://formspree.io/f/xrpbgrek', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject ?? '',
+        message: formData.message,
+      }),
     })
 
     if (!response.ok) {
-      const result = (await response.json()) as { error?: string }
-      throw new Error(result.error ?? 'Unable to send your message.')
+      errorMessage.value = 'Unable to send your message.'
+      return
     }
 
     showSnackbar.value = true
