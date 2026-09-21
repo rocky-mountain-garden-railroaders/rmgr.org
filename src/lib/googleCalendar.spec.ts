@@ -39,7 +39,7 @@ END:VCALENDAR`)
     expect(events[0]).toMatchObject({
       title: 'RMGR Monthly Meeting',
       date: 'September 17, 2026',
-      time: '1:15 PM - 2:45 PM',
+      time: '7:15 PM - 8:45 PM',
     })
     expect(events[1]).toMatchObject({
       date: 'October 17, 2026',

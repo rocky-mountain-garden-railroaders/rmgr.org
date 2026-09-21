@@ -65,7 +65,7 @@ END:VCALENDAR`,
     expect(eventData[0]).toMatchObject({
       title: 'RMGR Monthly Meeting',
       date: 'September 17, 2026',
-      time: '1:15 PM - 2:45 PM',
+      time: '7:15 PM - 8:45 PM',
       location: '2715 Dovely Park SE, Calgary, AB T2B 3G8, Canada',
       description: 'Monthly meeting',
       titleLink: undefined,
@@ -281,5 +281,43 @@ END:VCALENDAR`,
     expect(wrapper.text()).toContain('Past Events')
     expect(wrapper.text()).toContain('Old Event')
     expect(wrapper.text()).not.toContain('Future Event')
+  })
+
+  it('GIVEN a same-day evening event WHEN the current time is mid-afternoon locally THEN it is not classified as past', async () => {
+    // 22:00 UTC on Sept 17 is 4:00 PM in America/Edmonton (MDT, UTC-6),
+    // well before this event's 7:15-8:45 PM local end time (01:15-02:45 UTC
+    // the next day). A host-timezone-dependent TZID conversion previously
+    // miscalculated the UTC instant and could mark the event as already
+    // ended hours before its true local end time.
+    vi.setSystemTime(new Date('2026-09-17T22:00:00Z'))
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Same Day Evening Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+LOCATION:Online
+DESCRIPTION:Evening event
+END:VEVENT
+END:VCALENDAR`,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = mount(UpcomingEvents)
+    await Promise.resolve()
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Upcoming Events')
+    expect(wrapper.text()).toContain('Same Day Evening Event')
+
+    await wrapper.find('.past-toggle-btn').trigger('click')
+    await nextTick()
+
+    expect(wrapper.text()).not.toContain('Same Day Evening Event')
   })
 })

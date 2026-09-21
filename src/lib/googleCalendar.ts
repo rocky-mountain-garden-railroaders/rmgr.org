@@ -51,9 +51,6 @@ const zonedTimeToUtc = (
   return new Date(localUtc + offset)
 }
 
-// Parses a Google Calendar "date-only" value (YYYY-MM-DD, used for all-day
-// events) as local midnight in the calendar's timezone rather than UTC
-// midnight, so the exclusive end date lines up with the local day boundary.
 const dateOnlyToInstant = (value: string, timeZone: string) => {
   const [year, month, day] = value.split('-').map(Number)
   return zonedTimeToUtc(year, month - 1, day, 0, 0, 0, timeZone)
@@ -115,9 +112,6 @@ const parseIcsDate = (value: string, timeZone?: string) => {
   const compact = parsed.replace(/Z$/, '').replace(/^.*:/, '')
 
   if (/^\d{8}$/.test(compact)) {
-    // Date-only VALUE=DATE (all-day events) have no explicit offset. Anchor
-    // to the calendar's timezone rather than UTC so the local day boundary
-    // (used for the exclusive DTEND) doesn't shift by several hours.
     const year = Number(compact.slice(0, 4))
     const month = Number(compact.slice(4, 6)) - 1
     const day = Number(compact.slice(6, 8))
@@ -132,34 +126,7 @@ const parseIcsDate = (value: string, timeZone?: string) => {
   const second = Number(compact.slice(13, 15))
 
   if (timeZone && !parsed.endsWith('Z')) {
-    const localIso = `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}T${compact.slice(9, 11)}:${compact.slice(11, 13)}:${compact.slice(13, 15)}`
-    const dtf = new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    })
-
-    const target = new Date(localIso)
-    const parts = Object.fromEntries(
-      dtf.formatToParts(target).map((part) => [part.type, part.value]),
-    ) as Record<string, string>
-
-    const tzUtc = Date.UTC(
-      Number(parts.year),
-      Number(parts.month) - 1,
-      Number(parts.day),
-      Number(parts.hour),
-      Number(parts.minute),
-      Number(parts.second),
-    )
-    const localUtc = Date.UTC(year, month, day, hour, minute, second)
-    const offset = localUtc - tzUtc
-    return new Date(localUtc + offset)
+    return zonedTimeToUtc(year, month, day, hour, minute, second, timeZone)
   }
 
   return new Date(Date.UTC(year, month, day, hour, minute, second))

@@ -16,11 +16,11 @@
                   Welcome to the Rocky Mountain Garden Railroaders (RMGR)! We are a passionate
                   community of G-Gauge model railroaders based in
                   <span class="font-weight-medium text-primary">Calgary, Alberta, Canada</span>.
-                  What started as a group of friends getting together in the late 1980s has grown into a vibrant,
-                  family-focused club of approximately 20 member families who build, operate, and
+                  What started as a group of friends in the late 1980s has grown into a vibrant,
+                  family-focused club of approximately 35 member families who build, operate, and
                   display large-scale railways—both indoors and out.
                 </p>
-                <p>
+                <p class="mb-0">
                   Our mission is to promote the hobby of large-scale model railroading, support one
                   another's creative efforts, and share the joy of trains with the broader
                   community.
@@ -51,14 +51,14 @@
                   class="d-flex align-center mb-1"
                 >
                   <span class="text-secondary me-2 font-weight-bold">•</span>
-                  <span class="text-body-1">{{ item }}</span>
+                  <span class="text-body-1 font-weight-light">{{ item }}</span>
                 </div>
 
                 <p class="mt-4">
                   Whether you're creating a lush garden layout, building whimsical scenes with
                   bright colours, or engineering a detailed replica complete with smoke, sound, and
                   lighting, there’s no single “right way” to build a railway. Each layout is as
-                  unique as the family or individual behind it.
+                  unique as the family behind it.
                 </p>
               </v-col>
 
@@ -68,13 +68,13 @@
                 </div>
                 <p class="mb-4">
                   RMGR is built around the idea that model railroading should be accessible and
-                  enjoyable for everyone. Our club includes parents, children, and grandparents,
+                  enjoyable for all ages. Our club includes parents, children, and grandparents,
                   working side-by-side. G-Scale trains are ideal for outdoor use and easier for
                   small hands (and aging eyes) to appreciate.
                 </p>
                 <p>
-                  There’s something for everyone—running trains, gardening, laying track,
-                  building models, or just enjoying the social aspect of the hobby.
+                  There’s something for everyone—running
+                  trains, gardening, laying track, building models, or just enjoying the social aspect of the hobby.
                 </p>
               </v-col>
             </v-row>
@@ -88,7 +88,7 @@
             <v-col class="pe-md-6 mb-6 mb-md-0" cols="12" md="6">
               <div class="text-h5 font-weight-bold mb-3">Community Engagement</div>
               <p class="mb-4 opacity-90">
-                We're proud to share our love of trains with the general public through:
+                We're proud to share our love of trains with the wider community through:
               </p>
 
               <div
@@ -97,11 +97,12 @@
                 class="d-flex align-start mb-2"
               >
                 <span class="text-secondary me-2 font-weight-bold mt-n1">•</span>
-                <span class="text-body-1 opacity-90">{{ item }}</span>
+                <span class="text-body-1 font-weight-light opacity-90">{{ item }}</span>
               </div>
 
               <p class="mt-4 opacity-80">
-                We believe in giving back and bringing smiles to the public.
+                We believe in giving back and bringing smiles to the public through interactive,
+                eye-catching model railway experiences.
               </p>
             </v-col>
 
@@ -109,7 +110,7 @@
               <div class="text-h5 font-weight-bold mb-3">Annual Highlights</div>
               <p class="mb-4 opacity-90">
                 One of the most anticipated events is our annual Garden Tour, which is open to
-                anyone. It’s usually held in July or August.
+                anyone interested. It’s usually held in July or August.
               </p>
               <p class="opacity-90">
                 Members visit a series of club members' layouts, offering a chance to showcase
@@ -131,7 +132,7 @@
 
               <div v-for="(item, index) in clubList" :key="index" class="d-flex align-center mb-1">
                 <span class="text-secondary me-2 font-weight-bold">•</span>
-                <span class="text-body-1 opacity-90">{{ item }}</span>
+                <span class="text-body-1 font-weight-light opacity-90">{{ item }}</span>
               </div>
             </v-col>
 
@@ -144,7 +145,7 @@
                 class="d-flex align-start mb-2"
               >
                 <span class="text-secondary me-2 font-weight-bold mt-n1">•</span>
-                <span class="text-body-1 opacity-90">{{ item }}</span>
+                <span class="text-body-1 font-weight-light opacity-90">{{ item }}</span>
               </div>
             </v-col>
           </v-row>
@@ -195,23 +196,23 @@ const whatWeDoList = ref([
 const communityEngagementList = ref([
   'Public exhibits at Supertrain (The largest model train convention in Canada)',
   'Holiday display at the Calgary Zoo during their Zoo Lights festival',
-  'Display at Aspen Crossing on Father’s Day',
+  'Displays at Aspen Crossing on Father’s Day',
   'Layouts at hospitals, retirement homes, and fundraisers',
 ])
 
 const clubList = ref([
-  'Our video and book libraries',
-  'Expert guidance from experienced members',
+  'Our video library',
+  'Expert guidance from experienced modellers',
   'Club events, tours, and layout visits',
   'Invitations to “work parties” on layouts',
 ])
 
 const aimsObjectivesList = ref([
-  'Have fun!',
   'Promote the hobby of Large Scale Model Railroading',
-  'Empower people who are new to the hobby',
+  'Encourage and assist new members entering the hobby',
+  'Have fun and enjoy good fellowship through modelling and operations',
   'Support each other with technical and physical assistance',
-  'Serve the public by operating public layouts at train shows, hospitals, etc...',
+  'Serve the public by operating layouts at train shows, hospitals, and retirement homes',
 ])
 </script>
 
