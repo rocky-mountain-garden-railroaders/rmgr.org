@@ -1,11 +1,17 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import UpcomingEvents from '../views/UpcomingEvents.vue'
 
 describe('UpcomingEvents', () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('GIVEN calendar feed data exists WHEN the page renders THEN the list matches the feed items', async () => {
@@ -59,13 +65,13 @@ END:VCALENDAR`,
     expect(eventData[0]).toMatchObject({
       title: 'RMGR Monthly Meeting',
       date: 'September 17, 2026',
-      time: '1:15 PM - 2:45 PM',
+      time: '7:15 PM - 8:45 PM',
       location: '2715 Dovely Park SE, Calgary, AB T2B 3G8, Canada',
       description: 'Monthly meeting',
       titleLink: undefined,
     })
     expect(eventData[1]).toMatchObject({
-      date: 'October 17, 2026',
+      date: 'October 15, 2026',
     })
     expect(rows[0].text()).toBe(eventData[0].title)
     expect(rows[1].text()).toBe(eventData[1].title)
@@ -234,5 +240,79 @@ END:VCALENDAR`,
     await nextTick()
 
     expect(wrapper.find('.event-action-col').text()).toContain('')
+  })
+
+  it('GIVEN past and future events WHEN the page renders THEN only upcoming events show by default', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Old Event
+DTSTART;TZID=America/Edmonton:20250101T191500
+DTEND;TZID=America/Edmonton:20250101T204500
+LOCATION:Online
+DESCRIPTION:Past event
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Future Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+LOCATION:Online
+DESCRIPTION:Future event
+END:VEVENT
+END:VCALENDAR`,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = mount(UpcomingEvents)
+    await Promise.resolve()
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Upcoming Events')
+    expect(wrapper.text()).toContain('Future Event')
+    expect(wrapper.text()).not.toContain('Old Event')
+
+    await wrapper.find('.past-toggle-btn').trigger('click')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Past Events')
+    expect(wrapper.text()).toContain('Old Event')
+    expect(wrapper.text()).not.toContain('Future Event')
+  })
+
+  it('GIVEN a same-day evening event WHEN the current time is mid-afternoon locally THEN it is not classified as past', async () => {
+    vi.setSystemTime(new Date('2026-09-17T22:00:00Z'))
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Same Day Evening Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+LOCATION:Online
+DESCRIPTION:Evening event
+END:VEVENT
+END:VCALENDAR`,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = mount(UpcomingEvents)
+    await Promise.resolve()
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Upcoming Events')
+    expect(wrapper.text()).toContain('Same Day Evening Event')
+
+    await wrapper.find('.past-toggle-btn').trigger('click')
+    await nextTick()
+
+    expect(wrapper.text()).not.toContain('Same Day Evening Event')
   })
 })

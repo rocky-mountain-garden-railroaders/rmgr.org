@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseGoogleCalendarIcs } from './googleCalendar'
+import { mapGoogleCalendarFeedToEvents, parseGoogleCalendarIcs } from './googleCalendar'
 
 describe('googleCalendar', () => {
   it('GIVEN ICS text WHEN parsing THEN it returns calendar events', () => {
@@ -39,10 +39,17 @@ END:VCALENDAR`)
     expect(events[0]).toMatchObject({
       title: 'RMGR Monthly Meeting',
       date: 'September 17, 2026',
-      time: '1:15 PM - 2:45 PM',
+      time: '7:15 PM - 8:45 PM',
+      startsAt: '2026-09-18T01:15:00.000Z',
     })
     expect(events[1]).toMatchObject({
-      date: 'October 17, 2026',
+      date: 'October 15, 2026',
+      time: '7:15 PM - 8:45 PM',
+    })
+    expect(events[2]).toMatchObject({
+      date: 'November 19, 2026',
+      time: '7:15 PM - 8:45 PM',
+      startsAt: '2026-11-20T02:15:00.000Z',
     })
   })
 
@@ -156,6 +163,65 @@ END:VCALENDAR`)
       titleLink: 'https://www.calgaryzoo.com/news/zoolights2026/',
       url: 'https://www.calgaryzoo.com/news/zoolights2026/',
       description: '',
+    })
+  })
+
+  it('GIVEN an all-day feed event WHEN mapping THEN the displayed date matches the calendar-local start day', () => {
+    const events = mapGoogleCalendarFeedToEvents([
+      {
+        summary: 'Family Day',
+        start: { date: '2026-09-17' },
+        end: { date: '2026-09-18' },
+        location: 'TBD',
+      },
+    ])
+
+    expect(events[0]).toMatchObject({
+      date: 'September 17, 2026',
+      time: 'All day',
+    })
+  })
+
+  it('GIVEN an all-day ICS event with DTEND;VALUE=DATE WHEN parsing THEN it shows All day instead of a time range', () => {
+    const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Family Day
+DTSTART;VALUE=DATE:20260917
+DTEND;VALUE=DATE:20260918
+LOCATION:Clubhouse
+DESCRIPTION:All day event
+END:VEVENT
+END:VCALENDAR`)
+
+    expect(events[0]).toMatchObject({
+      title: 'Family Day',
+      date: 'September 17, 2026',
+      time: 'All day',
+    })
+  })
+
+  it('GIVEN a recurring all-day event with no TZID WHEN an occurrence crosses the Edmonton DST transition THEN it still renders the correct local date', () => {
+    const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:All-day Monthly Meeting
+DTSTART;VALUE=DATE:20260917
+DTEND;VALUE=DATE:20260918
+RRULE:FREQ=MONTHLY;BYDAY=3TH
+LOCATION:Clubhouse
+DESCRIPTION:All day recurring event
+END:VEVENT
+END:VCALENDAR`)
+
+    expect(events).toHaveLength(12)
+    expect(events[0]).toMatchObject({
+      date: 'September 17, 2026',
+      time: 'All day',
+      startsAt: '2026-09-17T06:00:00.000Z',
+    })
+    expect(events[2]).toMatchObject({
+      date: 'November 19, 2026',
+      time: 'All day',
+      startsAt: '2026-11-19T07:00:00.000Z',
     })
   })
 })

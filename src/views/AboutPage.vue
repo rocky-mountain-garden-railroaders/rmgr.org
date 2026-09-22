@@ -73,8 +73,8 @@
                   small hands (and aging eyes) to appreciate.
                 </p>
                 <p>
-                  There’s something for everyone—laying track, gardening, building models, running
-                  trains, or just enjoying the ride.
+                  There’s something for everyone—running
+                  trains, gardening, laying track, building models, or just enjoying the social aspect of the hobby.
                 </p>
               </v-col>
             </v-row>
