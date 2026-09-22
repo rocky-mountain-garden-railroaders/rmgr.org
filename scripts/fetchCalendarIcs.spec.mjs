@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -54,37 +54,21 @@ describe('run', () => {
     await rm(dir, { recursive: true, force: true })
   })
 
-  it('GIVEN a reachable feed WHEN run THEN it writes both the output and the fallback snapshot', async () => {
+  it('GIVEN a reachable feed WHEN run THEN it writes the output', async () => {
     const outputPath = join(dir, 'nested', 'calendar-ics')
-    const fallbackPath = join(dir, 'calendar-ics.fallback.ics')
     const fetchImpl = vi.fn().mockResolvedValue(okResponse('FRESH-FEED'))
 
-    await run({ outputPath, fallbackPath, fetchImpl, sleepImpl: vi.fn() })
+    await run({ outputPath, fetchImpl, sleepImpl: vi.fn() })
 
     await expect(readFile(outputPath, 'utf-8')).resolves.toBe('FRESH-FEED')
-    await expect(readFile(fallbackPath, 'utf-8')).resolves.toBe('FRESH-FEED')
   })
 
-  it('GIVEN the feed is unreachable but a fallback snapshot exists WHEN run THEN it writes the stale snapshot instead of failing', async () => {
+  it('GIVEN the feed is unreachable WHEN run THEN it writes an empty feed instead of failing', async () => {
     const outputPath = join(dir, 'calendar-ics')
-    const fallbackPath = join(dir, 'calendar-ics.fallback.ics')
-    await writeFile(fallbackPath, 'STALE-FEED', 'utf-8')
     const fetchImpl = vi.fn().mockRejectedValue(new Error('network down'))
 
-    await run({ outputPath, fallbackPath, fetchImpl, sleepImpl: vi.fn(), maxAttempts: 2 })
+    await run({ outputPath, fetchImpl, sleepImpl: vi.fn(), maxAttempts: 2 })
 
-    await expect(readFile(outputPath, 'utf-8')).resolves.toBe('STALE-FEED')
-    await expect(readFile(fallbackPath, 'utf-8')).resolves.toBe('STALE-FEED')
-  })
-
-  it('GIVEN the feed is unreachable and no fallback snapshot exists WHEN run THEN it throws instead of writing an empty feed', async () => {
-    const outputPath = join(dir, 'calendar-ics')
-    const fallbackPath = join(dir, 'calendar-ics.fallback.ics')
-    const fetchImpl = vi.fn().mockRejectedValue(new Error('network down'))
-
-    await expect(
-      run({ outputPath, fallbackPath, fetchImpl, sleepImpl: vi.fn(), maxAttempts: 2 }),
-    ).rejects.toThrow('No fallback calendar ICS snapshot is available; failing build.')
-    await expect(readFile(outputPath, 'utf-8')).rejects.toThrow()
+    await expect(readFile(outputPath, 'utf-8')).resolves.toBe('')
   })
 })

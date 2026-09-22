@@ -71,7 +71,6 @@ END:VCALENDAR`,
       titleLink: undefined,
     })
     expect(eventData[1]).toMatchObject({
-      // October 2026's 3rd Thursday is the 15th, not the 17th.
       date: 'October 15, 2026',
     })
     expect(rows[0].text()).toBe(eventData[0].title)
@@ -285,11 +284,6 @@ END:VCALENDAR`,
   })
 
   it('GIVEN a same-day evening event WHEN the current time is mid-afternoon locally THEN it is not classified as past', async () => {
-    // 22:00 UTC on Sept 17 is 4:00 PM in America/Edmonton (MDT, UTC-6),
-    // well before this event's 7:15-8:45 PM local end time (01:15-02:45 UTC
-    // the next day). A host-timezone-dependent TZID conversion previously
-    // miscalculated the UTC instant and could mark the event as already
-    // ended hours before its true local end time.
     vi.setSystemTime(new Date('2026-09-17T22:00:00Z'))
 
     const fetchMock = vi.fn().mockResolvedValue({

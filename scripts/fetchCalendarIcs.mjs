@@ -1,12 +1,9 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { CALENDAR_ICS_URL } from '../calendarSource.mjs'
 
 const scriptsDir = new URL('.', import.meta.url).pathname
 const outputPath = join(scriptsDir, '..', 'public', 'calendar-ics')
-// Checked into git so a fresh checkout still has something to serve if the
-// live feed is unreachable at build time. Refreshed on every successful fetch.
-const fallbackPath = join(scriptsDir, 'calendar-ics.fallback.ics')
 
 const MAX_ATTEMPTS = 3
 const TIMEOUT_MS = 10_000
@@ -53,7 +50,6 @@ export const fetchIcsWithRetries = async ({
 
 export const run = async ({
   outputPath: destPath = outputPath,
-  fallbackPath: snapshotPath = fallbackPath,
   ...retryOptions
 } = {}) => {
   await mkdir(dirname(destPath), { recursive: true })
@@ -61,15 +57,10 @@ export const run = async ({
   try {
     const ics = await fetchIcsWithRetries(retryOptions)
     await writeFile(destPath, ics, 'utf-8')
-    await writeFile(snapshotPath, ics, 'utf-8')
     console.log(`Wrote calendar ICS feed to ${destPath}`)
   } catch (error) {
-    console.error(`Falling back to last known calendar ICS snapshot: ${error.message}`)
-    const fallback = await readFile(snapshotPath, 'utf-8').catch(() => {
-      throw new Error('No fallback calendar ICS snapshot is available; failing build.')
-    })
-    await writeFile(destPath, fallback, 'utf-8')
-    console.warn(`Wrote stale fallback calendar ICS feed to ${destPath}`)
+    console.error(`Calendar feed unavailable; writing an empty feed: ${error.message}`)
+    await writeFile(destPath, '', 'utf-8')
   }
 }
 
