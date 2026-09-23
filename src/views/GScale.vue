@@ -1,5 +1,5 @@
 ﻿<script lang="ts" setup>
-import historyImage from '@/assets/20260624_135226.jpg'
+import historyImage from '@/assets/images/featured/20260624_135226.jpg'
 
 defineOptions({ name: 'GScaleInfo' })
 </script>
