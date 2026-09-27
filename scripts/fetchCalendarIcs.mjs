@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { CALENDAR_ICS_URL } from '../calendarSource.mjs'
 
@@ -10,6 +10,9 @@ const TIMEOUT_MS = 10_000
 const RETRY_DELAY_MS = 2_000
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export const isUsableIcs = (ics) =>
+  typeof ics === 'string' && ics.includes('BEGIN:VCALENDAR') && ics.includes('END:VCALENDAR')
 
 export const fetchIcs = async ({
   url = CALENDAR_ICS_URL,
@@ -23,7 +26,15 @@ export const fetchIcs = async ({
     if (!response.ok) {
       throw new Error(`Failed to fetch calendar ICS feed: ${response.status} ${response.statusText}`)
     }
-    return await response.text()
+
+    const ics = await response.text()
+    if (!isUsableIcs(ics)) {
+      throw new Error(
+        `Calendar ICS feed did not contain a VCALENDAR body (received ${ics.length} bytes)`,
+      )
+    }
+
+    return ics
   } finally {
     clearTimeout(timeout)
   }
@@ -48,6 +59,14 @@ export const fetchIcsWithRetries = async ({
   throw lastError
 }
 
+const readExistingFeed = async (destPath) => {
+  try {
+    return await readFile(destPath, 'utf-8')
+  } catch {
+    return null
+  }
+}
+
 export const run = async ({
   outputPath: destPath = outputPath,
   ...retryOptions
@@ -58,9 +77,24 @@ export const run = async ({
     const ics = await fetchIcsWithRetries(retryOptions)
     await writeFile(destPath, ics, 'utf-8')
     console.log(`Wrote calendar ICS feed to ${destPath}`)
+    return
   } catch (error) {
-    console.error(`Calendar feed unavailable; writing an empty feed: ${error.message}`)
-    await writeFile(destPath, '', 'utf-8')
+    const existing = await readExistingFeed(destPath)
+
+    // Keeping the last known-good feed is better than publishing an empty
+    // calendar, which would silently remove every event from the live site.
+    if (isUsableIcs(existing)) {
+      console.warn(
+        `Calendar feed unavailable (${error.message}); keeping the existing feed at ${destPath}.`,
+      )
+      return
+    }
+
+    throw new Error(
+      `Calendar feed unavailable and no usable cached feed exists at ${destPath}. ` +
+        `Refusing to publish an empty calendar. Cause: ${error.message}`,
+      { cause: error },
+    )
   }
 }
 

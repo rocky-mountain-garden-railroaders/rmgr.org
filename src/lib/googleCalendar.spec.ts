@@ -1,6 +1,38 @@
 import { describe, expect, it } from 'vitest'
 import { mapGoogleCalendarFeedToEvents, parseGoogleCalendarIcs } from './googleCalendar'
 
+// Recurrence expansion is relative to "now", so pin it to keep these deterministic.
+const NOW = new Date('2026-09-26T12:00:00.000Z')
+
+const monthlySeries = (dtstart: string) => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:RMGR Monthly Meeting
+DTSTART;TZID=America/Edmonton:${dtstart}T191500
+DTEND;TZID=America/Edmonton:${dtstart}T204500
+RRULE:FREQ=MONTHLY;BYDAY=3TH
+LOCATION:2715 Dovely Park SE, Calgary, AB T2B 3G8, Canada
+DESCRIPTION:Monthly meeting
+END:VEVENT
+END:VCALENDAR`
+
+const seriesWithException = (exceptionBody: string) => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:rmgr-monthly
+SUMMARY:RMGR Monthly Meeting
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+RRULE:FREQ=MONTHLY;BYDAY=3TH
+LOCATION:2715 Dovely Park SE, Calgary, AB T2B 3G8, Canada
+DESCRIPTION:Monthly meeting
+END:VEVENT
+BEGIN:VEVENT
+UID:rmgr-monthly
+RECURRENCE-ID;TZID=America/Edmonton:20261015T191500
+${exceptionBody}
+END:VEVENT
+END:VCALENDAR`
+
+
 describe('googleCalendar', () => {
   it('GIVEN ICS text WHEN parsing THEN it returns calendar events', () => {
     const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
@@ -33,9 +65,9 @@ RRULE:FREQ=MONTHLY;BYDAY=3TH
 LOCATION:2715 Dovely Park SE, Calgary, AB T2B 3G8, Canada
 DESCRIPTION:Monthly meeting
 END:VEVENT
-END:VCALENDAR`)
+END:VCALENDAR`, { now: NOW })
 
-    expect(events).toHaveLength(12)
+    expect(events).toHaveLength(19)
     expect(events[0]).toMatchObject({
       title: 'RMGR Monthly Meeting',
       date: 'September 17, 2026',
@@ -51,6 +83,85 @@ END:VCALENDAR`)
       time: '7:15 PM - 8:45 PM',
       startsAt: '2026-11-20T02:15:00.000Z',
     })
+  })
+
+
+  it('GIVEN a long-running monthly series that began years ago WHEN parsing THEN it still yields upcoming occurrences', () => {
+    const events = parseGoogleCalendarIcs(monthlySeries('20180920'), { now: NOW })
+
+    const upcoming = events.filter((event) => Date.parse(event.startsAt) >= NOW.getTime())
+
+    expect(upcoming.length).toBeGreaterThan(0)
+    expect(events.every((event) => event.title === 'RMGR Monthly Meeting')).toBe(true)
+  })
+
+  it('GIVEN a series older than the retained window WHEN parsing THEN stale occurrences are dropped', () => {
+    const events = parseGoogleCalendarIcs(monthlySeries('20180920'), { now: NOW })
+
+    const staleCutoff = new Date('2026-01-01T00:00:00.000Z').getTime()
+
+    expect(events.every((event) => Date.parse(event.startsAt) > staleCutoff)).toBe(true)
+  })
+
+  it('GIVEN a recurring series WHEN parsing THEN it keeps recent past occurrences for the past-events view', () => {
+    const events = parseGoogleCalendarIcs(monthlySeries('20180920'), { now: NOW })
+
+    const past = events.filter((event) => Date.parse(event.startsAt) < NOW.getTime())
+
+    expect(past.length).toBeGreaterThan(0)
+  })
+
+  it('GIVEN an unbounded series WHEN parsing THEN occurrences stop at the forward window', () => {
+    const events = parseGoogleCalendarIcs(monthlySeries('20180920'), { now: NOW })
+
+    const horizon = new Date('2028-06-26T12:00:00.000Z').getTime()
+
+    expect(events.length).toBeLessThan(60)
+    expect(events.every((event) => Date.parse(event.startsAt) <= horizon)).toBe(true)
+  })
+
+  it('GIVEN the same series at two different times WHEN parsing THEN the window follows the current date', () => {
+    const earlier = parseGoogleCalendarIcs(monthlySeries('20180920'), {
+      now: new Date('2026-09-26T12:00:00.000Z'),
+    })
+    const later = parseGoogleCalendarIcs(monthlySeries('20180920'), {
+      now: new Date('2030-09-26T12:00:00.000Z'),
+    })
+
+    expect(later[0].startsAt).not.toBe(earlier[0].startsAt)
+    expect(Date.parse(later[0].startsAt)).toBeGreaterThan(Date.parse(earlier[0].startsAt))
+    expect(later.filter((e) => Date.parse(e.startsAt) >= Date.parse('2030-09-26')).length).toBeGreaterThan(0)
+  })
+
+  it('GIVEN a non-recurring past event WHEN parsing THEN it is still returned regardless of the window', () => {
+    const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Historic Open House
+DTSTART;TZID=America/Edmonton:20100612T100000
+DTEND;TZID=America/Edmonton:20100612T160000
+LOCATION:Clubhouse
+END:VEVENT
+END:VCALENDAR`, { now: NOW })
+
+    expect(events).toHaveLength(1)
+    expect(events[0].title).toBe('Historic Open House')
+  })
+
+  it('GIVEN a frequent long-running series WHEN parsing THEN past occurrences do not crowd out upcoming ones', () => {
+    const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Daily Work Session
+DTSTART;TZID=America/Edmonton:19900105T190000
+DTEND;TZID=America/Edmonton:19900105T210000
+RRULE:FREQ=DAILY
+END:VEVENT
+END:VCALENDAR`, { now: NOW })
+
+    const upcoming = events.filter((event) => Date.parse(event.startsAt) >= NOW.getTime())
+    const past = events.filter((event) => Date.parse(event.startsAt) < NOW.getTime())
+
+    expect(upcoming.length).toBeGreaterThan(0)
+    expect(past.length).toBeLessThanOrEqual(12)
   })
 
   it('GIVEN multiple events WHEN parsing THEN it sorts them from soonest to latest', () => {
@@ -210,9 +321,9 @@ RRULE:FREQ=MONTHLY;BYDAY=3TH
 LOCATION:Clubhouse
 DESCRIPTION:All day recurring event
 END:VEVENT
-END:VCALENDAR`)
+END:VCALENDAR`, { now: NOW })
 
-    expect(events).toHaveLength(12)
+    expect(events).toHaveLength(19)
     expect(events[0]).toMatchObject({
       date: 'September 17, 2026',
       time: 'All day',
@@ -223,5 +334,77 @@ END:VCALENDAR`)
       time: 'All day',
       startsAt: '2026-11-19T07:00:00.000Z',
     })
+  })
+
+  it('GIVEN an edited recurrence exception WHEN parsing THEN that occurrence uses the exception metadata', () => {
+    const events = parseGoogleCalendarIcs(
+      seriesWithException(`SUMMARY:RMGR Annual General Meeting
+DTSTART;TZID=America/Edmonton:20261015T183000
+DTEND;TZID=America/Edmonton:20261015T210000
+LOCATION:Community Hall
+DESCRIPTION:AGM and elections
+URL:https://example.com/agm`),
+      { now: NOW },
+    )
+
+    expect(events.find((event) => event.date === 'October 15, 2026')).toMatchObject({
+      title: 'RMGR Annual General Meeting',
+      time: '6:30 PM - 9:00 PM',
+      location: 'Community Hall',
+      description: 'AGM and elections',
+      titleLink: 'https://example.com/agm',
+      url: 'https://example.com/agm',
+    })
+
+    // Unmodified occurrences must still use the master's metadata.
+    expect(events.find((event) => event.date === 'November 19, 2026')).toMatchObject({
+      title: 'RMGR Monthly Meeting',
+      time: '7:15 PM - 8:45 PM',
+      location: '2715 Dovely Park SE, Calgary, AB T2B 3G8, Canada',
+      url: undefined,
+    })
+  })
+
+  it('GIVEN an exception in another time zone WHEN parsing THEN its own TZID is used', () => {
+    const events = parseGoogleCalendarIcs(
+      seriesWithException(`SUMMARY:RMGR Remote Meeting
+DTSTART;TZID=America/Toronto:20261015T211500
+DTEND;TZID=America/Toronto:20261015T224500`),
+      { now: NOW },
+    )
+
+    expect(events.find((event) => event.date === 'October 15, 2026')).toMatchObject({
+      title: 'RMGR Remote Meeting',
+      startsAt: '2026-10-16T01:15:00.000Z',
+      endsAt: '2026-10-16T02:45:00.000Z',
+    })
+  })
+
+  it('GIVEN a cancelled recurrence exception WHEN parsing THEN that occurrence is omitted', () => {
+    const events = parseGoogleCalendarIcs(
+      seriesWithException(`SUMMARY:RMGR Monthly Meeting
+STATUS:CANCELLED
+DTSTART;TZID=America/Edmonton:20261015T191500
+DTEND;TZID=America/Edmonton:20261015T204500`),
+      { now: NOW },
+    )
+
+    expect(events.some((event) => event.date === 'October 15, 2026')).toBe(false)
+    expect(events.some((event) => event.date === 'November 19, 2026')).toBe(true)
+  })
+
+  it('GIVEN a cancelled series WHEN parsing THEN no occurrences are returned', () => {
+    const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:cancelled-series
+SUMMARY:RMGR Monthly Meeting
+STATUS:CANCELLED
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+RRULE:FREQ=MONTHLY;BYDAY=3TH
+END:VEVENT
+END:VCALENDAR`, { now: NOW })
+
+    expect(events).toEqual([])
   })
 })

@@ -151,7 +151,30 @@ const stripUrlOnlyDescription = (value: string, url?: string) => {
   return value
 }
 
-const MAX_RECURRING_OCCURRENCES = 12
+const MONTHS_OF_PAST_OCCURRENCES = 6
+const MONTHS_OF_FUTURE_OCCURRENCES = 18
+
+/**
+ * Recurring series are expanded from DTSTART, so an unbounded rule that started
+ * years ago would otherwise yield only stale occurrences. The iteration cap is
+ * generous enough for a daily series running for decades, so the walk always
+ * reaches the live window before giving up.
+ */
+const MAX_RECURRENCE_ITERATIONS = 20_000
+
+/**
+ * Past and future occurrences get separate budgets. A shared budget would let a
+ * frequent series (a daily rule, say) spend the whole allowance on past dates
+ * and surface no upcoming events at all.
+ */
+const MAX_PAST_OCCURRENCES_PER_SERIES = 12
+const MAX_FUTURE_OCCURRENCES_PER_SERIES = 48
+
+const addMonths = (date: Date, months: number) => {
+  const shifted = new Date(date.getTime())
+  shifted.setUTCMonth(shifted.getUTCMonth() + months)
+  return shifted
+}
 
 const icalTimeToInstant = (time: ICAL.Time, fallbackTimeZone: string) => {
   const zone = time.zone?.tzid
@@ -174,8 +197,27 @@ const icalTimeToInstant = (time: ICAL.Time, fallbackTimeZone: string) => {
   )
 }
 
+const DAY_MS = 86_400_000
+
 const getTzid = (component: ICAL.Component, property: string) =>
   (component.getFirstProperty(property)?.getParameter('tzid') as string | undefined) ?? undefined
+
+const isCancelled = (event: ICAL.Event) =>
+  String(event.component.getFirstPropertyValue('status') ?? '').toUpperCase() === 'CANCELLED'
+
+/**
+ * Recurrence exceptions carry their own SUMMARY, LOCATION, DESCRIPTION, URL and
+ * TZIDs, so metadata is always read from the occurrence's own event rather than
+ * the series master.
+ */
+const occurrenceZones = (item: ICAL.Event, fallbackTimeZone: string) => {
+  const startTimeZone = getTzid(item.component, 'dtstart') ?? fallbackTimeZone
+  return {
+    startTimeZone,
+    endTimeZone: getTzid(item.component, 'dtend') ?? startTimeZone,
+    hasEnd: Boolean(item.component.getFirstProperty('dtend')),
+  }
+}
 
 const toCalendarEvent = (
   event: ICAL.Event,
@@ -209,8 +251,14 @@ const toCalendarEvent = (
   }
 }
 
-export const parseGoogleCalendarIcs = (ics: string): CalendarEvent[] => {
+export const parseGoogleCalendarIcs = (
+  ics: string,
+  { now = new Date() }: { now?: Date } = {},
+): CalendarEvent[] => {
   if (!ics.trim()) return []
+
+  const windowStart = addMonths(now, -MONTHS_OF_PAST_OCCURRENCES).getTime()
+  const windowEnd = addMonths(now, MONTHS_OF_FUTURE_OCCURRENCES).getTime()
 
   let vCalendar: ICAL.Component
   try {
@@ -244,6 +292,8 @@ export const parseGoogleCalendarIcs = (ics: string): CalendarEvent[] => {
 
   for (const event of masters) {
     if (!event.startDate) continue
+    // A cancelled master means the event (or the whole series) was called off.
+    if (isCancelled(event)) continue
 
     const startTimeZone = getTzid(event.component, 'dtstart') ?? CALENDAR_TIME_ZONE
     const endTimeZone = getTzid(event.component, 'dtend') ?? startTimeZone
@@ -263,18 +313,49 @@ export const parseGoogleCalendarIcs = (ics: string): CalendarEvent[] => {
     }
 
     const iterator = event.iterator()
-    for (let index = 0; index < MAX_RECURRING_OCCURRENCES; index += 1) {
+    const nowMs = now.getTime()
+    const recentPast: ICAL.Time[] = []
+    const upcoming: ICAL.Time[] = []
+
+    for (let index = 0; index < MAX_RECURRENCE_ITERATIONS; index += 1) {
+      if (upcoming.length >= MAX_FUTURE_OCCURRENCES_PER_SERIES) break
+
       const next = iterator.next()
       if (!next) break
 
-      const details = event.getOccurrenceDetails(next)
+      const approxStart = next.toUnixTime() * 1000
+      if (approxStart > windowEnd + DAY_MS) break
+      if (approxStart < windowStart - DAY_MS) continue
+
+      const occurrenceStart = icalTimeToInstant(next, startTimeZone).getTime()
+
+      if (occurrenceStart > windowEnd) break
+      if (occurrenceStart < windowStart) continue
+
+      if (occurrenceStart < nowMs) {
+        recentPast.push(next)
+        if (recentPast.length > MAX_PAST_OCCURRENCES_PER_SERIES) recentPast.shift()
+      } else {
+        upcoming.push(next)
+      }
+    }
+
+    for (const occurrence of [...recentPast, ...upcoming]) {
+      const details = event.getOccurrenceDetails(occurrence)
+      const item = details.item ?? event
+
+      // A cancelled exception means that single instance was called off.
+      if (isCancelled(item)) continue
+
+      const zones = occurrenceZones(item, startTimeZone)
+
       events.push(
         toCalendarEvent(
-          event,
+          item,
           details.startDate,
-          hasEnd ? details.endDate : undefined,
-          startTimeZone,
-          endTimeZone,
+          zones.hasEnd ? details.endDate : undefined,
+          zones.startTimeZone,
+          zones.endTimeZone,
         ),
       )
     }
