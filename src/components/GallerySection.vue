@@ -7,10 +7,14 @@ type GalleryImage = {
 
 defineOptions({ name: 'GallerySection' })
 
-defineProps<{
-  title: string
-  images: GalleryImage[]
-}>()
+withDefaults(
+  defineProps<{
+    title: string
+    images: GalleryImage[]
+    description?: string
+  }>(),
+  { description: '' },
+)
 
 const emit = defineEmits<{
   openImage: [index: number]
@@ -29,8 +33,11 @@ const emit = defineEmits<{
           </template>
 
           <div class="image-title-overlay">
-            <span class="text-h6 font-weight-bold text-white">
+            <span class="text-h6 font-weight-bold text-white d-block">
               {{ title }}
+            </span>
+            <span v-if="description" class="text-body-2 text-white d-block mt-1 opacity-90">
+              {{ description }}
             </span>
           </div>
         </v-img>
