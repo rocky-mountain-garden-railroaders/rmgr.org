@@ -13,6 +13,7 @@ const slideshowDelayMs = 5000
 
 const activeGroup = computed(() => galleryGroups[activeGroupIndex.value] ?? null)
 const activeImage = computed(() => activeGroup.value?.images[activeImageIndex.value] ?? null)
+const hasMultipleImages = computed(() => (activeGroup.value?.images.length ?? 0) > 1)
 const isMobileView = ref(false)
 let mediaQuery: MediaQueryList | null = null
 const mobileBreakpoint = '(max-width: 1279.98px)'
@@ -111,6 +112,7 @@ onUnmounted(() => {
             <tr v-for="(row, rowIndex) in galleryRows" :key="rowIndex">
               <td v-for="(group, columnIndex) in row" :key="group.title" class="gallery-cell">
                 <GallerySection
+                  :description="group.description"
                   :images="group.images"
                   :title="group.title"
                   @open-image="openLightbox(rowIndex * (isMobileView ? 1 : 3) + columnIndex, $event)"
@@ -139,17 +141,45 @@ onUnmounted(() => {
               max-height="75vh"
             />
 
-            <v-btn class="modal-close" color="white" icon="mdi-close" variant="text" @click="isLightboxOpen = false" />
-            <v-btn class="modal-nav modal-nav-left" icon size="small" variant="text" @click="showPreviousImage">
-              <v-icon icon="mdi-chevron-left" size="36" />
+            <v-btn
+              aria-label="Close image viewer"
+              class="modal-close"
+              color="white"
+              icon="mdi-close"
+              variant="text"
+              @click="isLightboxOpen = false"
+            />
+            <v-btn
+              v-if="hasMultipleImages"
+              aria-label="Previous image"
+              class="modal-nav modal-nav-left"
+              icon
+              :ripple="false"
+              size="small"
+              variant="text"
+              @click="showPreviousImage"
+            >
+              <v-icon aria-hidden="true" icon="mdi-chevron-left" size="36" />
             </v-btn>
 
-            <v-btn class="modal-nav modal-nav-right" icon size="small" variant="text" @click="showNextImage">
-              <v-icon icon="mdi-chevron-right" size="36" />
+            <v-btn
+              v-if="hasMultipleImages"
+              aria-label="Next image"
+              class="modal-nav modal-nav-right"
+              icon
+              :ripple="false"
+              size="small"
+              variant="text"
+              @click="showNextImage"
+            >
+              <v-icon aria-hidden="true" icon="mdi-chevron-right" size="36" />
             </v-btn>
           </div>
 
-          <v-card-text class="text-body-1 bg-surface py-4 px-6 text-left text-on-surface border-t">
+          <v-card-text
+            v-if="activeImage.caption"
+            class="text-body-1 bg-surface py-4 px-6 text-left text-on-surface border-t"
+          >
             {{ activeImage.caption }}
           </v-card-text>
         </v-card>
@@ -210,12 +240,45 @@ onUnmounted(() => {
   bottom: 0;
   height: auto;
   color: white;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  opacity: 1;
+  background: transparent;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.85));
 }
 
-.modal-image-shell:hover .modal-nav {
-  opacity: 1;
+.modal-nav:hover,
+.modal-nav:focus-visible {
+  background: transparent;
+}
+
+/* Suppresses Vuetify's circular hover/elevation layers so only the arrow shows. */
+.modal-nav :deep(.v-btn__overlay),
+.modal-nav :deep(.v-btn__underlay) {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .modal-nav {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .modal-image-shell:hover .modal-nav,
+  .modal-image-shell:focus-within .modal-nav,
+  .modal-nav:focus-visible {
+    opacity: 1;
+  }
+}
+
+.modal-nav:focus-visible,
+.modal-close:focus-visible {
+  outline: 2px solid white;
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-nav {
+    transition: none;
+  }
 }
 
 .modal-nav-left {
