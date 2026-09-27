@@ -1,0 +1,40 @@
+{
+  "galleries": {
+    "Super Train 2024": {
+      "title": "",
+      "description": "",
+      "images": {
+        "CS5_1317-CR3_DxO_DeepPRIME.jpg": {
+          "alt": "",
+          "caption": ""
+        },
+        "CS5_1328-CR3_DxO_DeepPRIME.jpg": {
+          "alt": "",
+          "caption": ""
+        },
+        "CS5_1377-CR3_DxO_DeepPRIME.jpg": {
+          "alt": "",
+          "caption": ""
+        }
+      }
+    },
+    "Super Train 2025": {
+      "title": "",
+      "description": "",
+      "images": {
+        "CS7_3611.jpg": {
+          "alt": "",
+          "caption": ""
+        },
+        "CS7_3612.jpg": {
+          "alt": "",
+          "caption": ""
+        },
+        "CS7_3615.jpg": {
+          "alt": "",
+          "caption": ""
+        }
+      }
+    }
+  }
+}
