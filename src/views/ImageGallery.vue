@@ -17,6 +17,21 @@ const hasMultipleImages = computed(() => (activeGroup.value?.images.length ?? 0)
 const isMobileView = ref(false)
 let mediaQuery: MediaQueryList | null = null
 const mobileBreakpoint = '(max-width: 1279.98px)'
+const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
+
+const isSlideshowPaused = ref(false)
+const isPointerOverViewer = ref(false)
+const isFocusWithinViewer = ref(false)
+const isViewerInteracting = computed(() => isPointerOverViewer.value || isFocusWithinViewer.value)
+const shouldAutoplay = computed(
+  () =>
+    isLightboxOpen.value &&
+    hasMultipleImages.value &&
+    !isSlideshowPaused.value &&
+    !isViewerInteracting.value,
+)
+
+const prefersReducedMotion = () => window.matchMedia(reducedMotionQuery).matches
 
 const updateMobileView = () => {
   isMobileView.value = mediaQuery?.matches ?? false
@@ -36,7 +51,19 @@ const galleryRows = computed(() => {
 const openLightbox = (groupIndex: number, imageIndex: number) => {
   activeGroupIndex.value = groupIndex
   activeImageIndex.value = imageIndex
+  isSlideshowPaused.value = prefersReducedMotion()
   isLightboxOpen.value = true
+}
+
+const toggleSlideshow = () => {
+  isSlideshowPaused.value = !isSlideshowPaused.value
+}
+
+const onViewerFocusOut = (event: FocusEvent) => {
+  const viewer = event.currentTarget as HTMLElement
+  if (!viewer.contains(event.relatedTarget as Node | null)) {
+    isFocusWithinViewer.value = false
+  }
 }
 
 const showPreviousImage = () => {
@@ -62,7 +89,7 @@ const clearSlideshowTimer = () => {
 const startSlideshowTimer = () => {
   clearSlideshowTimer()
 
-  if (!isLightboxOpen.value || !activeGroup.value || activeGroup.value.images.length < 2) return
+  if (!shouldAutoplay.value) return
 
   slideshowTimer = setTimeout(() => {
     showNextImage()
@@ -70,13 +97,15 @@ const startSlideshowTimer = () => {
   }, slideshowDelayMs)
 }
 
-watch([isLightboxOpen, activeGroupIndex, activeImageIndex], () => {
-  if (isLightboxOpen.value) {
-    startSlideshowTimer()
-  } else {
-    clearSlideshowTimer()
+watch(isLightboxOpen, (isOpen) => {
+  // The viewer unmounts on close, so mouseleave/focusout never fire to reset these.
+  if (!isOpen) {
+    isPointerOverViewer.value = false
+    isFocusWithinViewer.value = false
   }
 })
+
+watch([shouldAutoplay, activeGroupIndex, activeImageIndex], startSlideshowTimer)
 
 onBeforeUnmount(() => {
   clearSlideshowTimer()
@@ -131,7 +160,15 @@ onUnmounted(() => {
 
     <v-dialog v-model="isLightboxOpen" max-width="1000" scrollable>
       <v-card class="text-right" color="transparent" flat>
-        <v-card v-if="activeImage" class="bg-surface rounded-lg overflow-hidden" flat>
+        <v-card
+          v-if="activeImage"
+          class="bg-surface rounded-lg overflow-hidden lightbox-viewer"
+          flat
+          @focusin="isFocusWithinViewer = true"
+          @focusout="onViewerFocusOut"
+          @mouseenter="isPointerOverViewer = true"
+          @mouseleave="isPointerOverViewer = false"
+        >
           <div class="modal-image-shell">
             <v-img
               :alt="activeImage.alt"
@@ -141,6 +178,17 @@ onUnmounted(() => {
               max-height="75vh"
             />
 
+            <v-btn
+              v-if="hasMultipleImages"
+              :aria-label="isSlideshowPaused ? 'Play slideshow' : 'Pause slideshow'"
+              class="modal-slideshow-toggle"
+              color="white"
+              icon
+              variant="text"
+              @click="toggleSlideshow"
+            >
+              <v-icon aria-hidden="true" :icon="isSlideshowPaused ? 'mdi-play' : 'mdi-pause'" />
+            </v-btn>
             <v-btn
               aria-label="Close image viewer"
               class="modal-close"
@@ -225,13 +273,18 @@ onUnmounted(() => {
   position: relative;
 }
 
-.modal-close {
+.modal-close,
+.modal-slideshow-toggle {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
   z-index: 2;
   color: white;
   background: rgba(0, 0, 0, 0.35);
+}
+
+.modal-slideshow-toggle {
+  right: 3.75rem;
 }
 
 .modal-nav {
@@ -270,7 +323,8 @@ onUnmounted(() => {
 }
 
 .modal-nav:focus-visible,
-.modal-close:focus-visible {
+.modal-close:focus-visible,
+.modal-slideshow-toggle:focus-visible {
   outline: 2px solid white;
   outline-offset: -2px;
 }
