@@ -1,5 +1,5 @@
-import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 const { galleryGroups } = vi.hoisted(() => ({
@@ -49,15 +49,15 @@ const stubs = {
   'v-row': { template: '<div><slot /></div>' },
 }
 
-const createMatchMedia = (matches: boolean) =>
-  vi.fn().mockImplementation(() => ({
-    matches,
+const createMatchMedia = (isMobile: boolean, prefersReducedMotion: boolean) =>
+  vi.fn().mockImplementation((query: string) => ({
+    matches: query.includes('prefers-reduced-motion') ? prefersReducedMotion : isMobile,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
   }))
 
-const mountGallery = async (isMobile: boolean) => {
-  vi.stubGlobal('matchMedia', createMatchMedia(isMobile))
+const mountGallery = async (isMobile: boolean, { prefersReducedMotion = false } = {}) => {
+  vi.stubGlobal('matchMedia', createMatchMedia(isMobile, prefersReducedMotion))
 
   const wrapper = mount(ImageGallery, { global: { stubs } })
   await nextTick()
@@ -79,8 +79,113 @@ const cellsPerRow = (wrapper: ReturnType<typeof mount>) =>
   wrapper.findAll('tr').map((row) => row.findAll('td.gallery-cell').length)
 
 describe('ImageGallery', () => {
+  // Opening the lightbox starts a recursive slideshow timer that only onBeforeUnmount clears.
+  enableAutoUnmount(afterEach)
+
   beforeEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('GIVEN the lightbox slideshow is running WHEN the gallery unmounts THEN no timers remain', async () => {
+    vi.useFakeTimers()
+    const wrapper = await mountGallery(false)
+
+    await wrapper.findAll('button.image-hit-area')[0].trigger('click')
+    await nextTick()
+    expect(vi.getTimerCount()).toBe(1)
+
+    wrapper.unmount()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  describe('slideshow', () => {
+    const SLIDESHOW_DELAY_MS = 5000
+    const group = galleryGroups[0]
+
+    const openFirstGallery = async (options?: { prefersReducedMotion?: boolean }) => {
+      vi.useFakeTimers()
+      const wrapper = await mountGallery(false, options)
+      await wrapper.findAll('button.image-hit-area')[0].trigger('click')
+      await nextTick()
+      return wrapper
+    }
+
+    const currentSrc = (wrapper: ReturnType<typeof mount>) =>
+      wrapper.find('.modal-image-shell [src]').attributes('src')
+
+    const advance = async (ms = SLIDESHOW_DELAY_MS) => {
+      vi.advanceTimersByTime(ms)
+      await nextTick()
+    }
+
+    it('GIVEN the lightbox is open WHEN the delay elapses THEN it advances to the next image', async () => {
+      const wrapper = await openFirstGallery()
+
+      await advance()
+
+      expect(currentSrc(wrapper)).toBe(group.images[1].src)
+    })
+
+    it('GIVEN a multi-image gallery WHEN opened THEN a labelled pause control is shown', async () => {
+      const wrapper = await openFirstGallery()
+
+      const toggle = wrapper.find('.modal-slideshow-toggle')
+      expect(toggle.attributes('aria-label')).toBe('Pause slideshow')
+      expect(toggle.find('i').attributes('aria-hidden')).toBe('true')
+    })
+
+    it('GIVEN the pause control WHEN activated THEN the slideshow stops until played again', async () => {
+      const wrapper = await openFirstGallery()
+
+      await wrapper.find('.modal-slideshow-toggle').trigger('click')
+      expect(wrapper.find('.modal-slideshow-toggle').attributes('aria-label')).toBe('Play slideshow')
+      expect(vi.getTimerCount()).toBe(0)
+
+      await advance(SLIDESHOW_DELAY_MS * 3)
+      expect(currentSrc(wrapper)).toBe(group.images[0].src)
+
+      await wrapper.find('.modal-slideshow-toggle').trigger('click')
+      await advance()
+      expect(currentSrc(wrapper)).toBe(group.images[1].src)
+    })
+
+    it('GIVEN the pointer is over the viewer WHEN the delay elapses THEN it does not advance', async () => {
+      const wrapper = await openFirstGallery()
+      const viewer = wrapper.find('.lightbox-viewer')
+
+      await viewer.trigger('mouseenter')
+      await advance(SLIDESHOW_DELAY_MS * 3)
+      expect(currentSrc(wrapper)).toBe(group.images[0].src)
+
+      await viewer.trigger('mouseleave')
+      await advance()
+      expect(currentSrc(wrapper)).toBe(group.images[1].src)
+    })
+
+    it('GIVEN keyboard focus is inside the viewer WHEN the delay elapses THEN it does not advance', async () => {
+      const wrapper = await openFirstGallery()
+      const viewer = wrapper.find('.lightbox-viewer')
+
+      await viewer.trigger('focusin')
+      await advance(SLIDESHOW_DELAY_MS * 3)
+      expect(currentSrc(wrapper)).toBe(group.images[0].src)
+
+      await viewer.trigger('focusout', { relatedTarget: null })
+      await advance()
+      expect(currentSrc(wrapper)).toBe(group.images[1].src)
+    })
+
+    it('GIVEN the user prefers reduced motion WHEN the lightbox opens THEN the slideshow starts paused', async () => {
+      const wrapper = await openFirstGallery({ prefersReducedMotion: true })
+
+      expect(wrapper.find('.modal-slideshow-toggle').attributes('aria-label')).toBe('Play slideshow')
+      await advance(SLIDESHOW_DELAY_MS * 3)
+      expect(currentSrc(wrapper)).toBe(group.images[0].src)
+    })
   })
 
   it(`GIVEN lg and up WHEN rendering THEN it lays out ${DESKTOP_COLUMNS} gallery sections per row`, async () => {
