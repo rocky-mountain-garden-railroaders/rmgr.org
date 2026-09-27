@@ -1,3 +1,5 @@
+import ICAL from 'ical.js'
+
 export type CalendarEvent = {
   title: string
   date: string
@@ -115,42 +117,9 @@ export const mapGoogleCalendarFeedToEvents = (items: Array<any>): CalendarEvent[
   })
 }
 
-const parseIcsDate = (value: string, timeZone?: string) => {
-  const parsed = value.trim()
-  const compact = parsed.replace(/Z$/, '').replace(/^.*:/, '')
-
-  if (/^\d{8}$/.test(compact)) {
-    const year = Number(compact.slice(0, 4))
-    const month = Number(compact.slice(4, 6)) - 1
-    const day = Number(compact.slice(6, 8))
-    return zonedTimeToUtc(year, month, day, 0, 0, 0, timeZone ?? CALENDAR_TIME_ZONE)
-  }
-
-  const year = Number(compact.slice(0, 4))
-  const month = Number(compact.slice(4, 6)) - 1
-  const day = Number(compact.slice(6, 8))
-  const hour = Number(compact.slice(9, 11))
-  const minute = Number(compact.slice(11, 13))
-  const second = Number(compact.slice(13, 15))
-
-  if (timeZone && !parsed.endsWith('Z')) {
-    return zonedTimeToUtc(year, month, day, hour, minute, second, timeZone)
-  }
-
-  return new Date(Date.UTC(year, month, day, hour, minute, second))
-}
-
-const unfoldIcs = (ics: string) => ics.replace(/\r?\n[ \t]/g, '')
-
-const decodeIcsValue = (value: string) =>
-  value
-    .replace(/\\n/g, '\n')
-    .replace(/\\,/g, ',')
-    .replace(/\\;/g, ';')
-    .replace(/\\\\/g, '\\')
-    .replace(/&amp;/g, '&')
-
 const stripHtmlTags = (value: string) => value.replace(/<[^>]*>/g, '')
+
+const decodeHtmlEntities = (value: string) => value.replace(/&amp;/g, '&')
 
 const extractUrlFromGoogleRedirect = (value: string) => {
   try {
@@ -173,6 +142,7 @@ const extractUrl = (value: string) => {
 
   return extractUrlFromGoogleRedirect(plainUrl)
 }
+
 const stripUrlOnlyDescription = (value: string, url?: string) => {
   if (!url) return value
   const normalized = stripHtmlTags(value).trim()
@@ -181,140 +151,133 @@ const stripUrlOnlyDescription = (value: string, url?: string) => {
   return value
 }
 
-const parseRrule = (value?: string) => {
-  if (!value) return null
+const MAX_RECURRING_OCCURRENCES = 12
 
-  const parts = Object.fromEntries(
-    value.split(';').map((part) => {
-      const [key, rawValue] = part.split('=')
-      return [key, rawValue]
-    }),
-  ) as Record<string, string | undefined>
+const icalTimeToInstant = (time: ICAL.Time, fallbackTimeZone: string) => {
+  const zone = time.zone?.tzid
+  const timeZone = !zone || zone === 'floating' ? fallbackTimeZone : zone
 
-  if (parts.FREQ !== 'MONTHLY' || parts.BYDAY !== '3TH') {
-    return null
+  if (timeZone === 'UTC' || timeZone === 'Z') {
+    return new Date(
+      Date.UTC(time.year, time.month - 1, time.day, time.hour, time.minute, time.second),
+    )
   }
 
-  return { ordinal: 3, weekday: 4 }
+  return zonedTimeToUtc(
+    time.year,
+    time.month - 1,
+    time.day,
+    time.hour,
+    time.minute,
+    time.second,
+    timeZone,
+  )
 }
 
-const nthWeekdayOfMonth = (year: number, month: number, ordinal: number, weekday: number) => {
-  const firstWeekday = new Date(Date.UTC(year, month, 1)).getUTCDay()
-  const offset = (weekday - firstWeekday + 7) % 7
-  return 1 + offset + (ordinal - 1) * 7
-}
+const getTzid = (component: ICAL.Component, property: string) =>
+  (component.getFirstProperty(property)?.getParameter('tzid') as string | undefined) ?? undefined
 
-const expandMonthlyByDayOccurrences = (
-  start: Date,
-  end: Date | undefined,
-  rule: { ordinal: number; weekday: number },
+const toCalendarEvent = (
+  event: ICAL.Event,
+  start: ICAL.Time,
+  end: ICAL.Time | undefined,
   startTimeZone: string,
   endTimeZone: string,
-  count: number,
-) => {
-  const startParts = getZonedDateParts(start, startTimeZone)
-  const endParts = end ? getZonedDateParts(end, endTimeZone) : undefined
-  const dayDelta = endParts
-    ? Math.round(
-        (Date.UTC(endParts.year, endParts.month, endParts.day) -
-          Date.UTC(startParts.year, startParts.month, startParts.day)) /
-          86_400_000,
-      )
-    : 0
+): CalendarEvent => {
+  const isAllDay = start.isDate
+  const startInstant = icalTimeToInstant(start, startTimeZone)
+  const endInstant = end ? icalTimeToInstant(end, endTimeZone) : undefined
 
-  return Array.from({ length: count }, (_, index) => {
-    const totalMonths = startParts.month + index
-    const occurrenceYear = startParts.year + Math.floor(totalMonths / 12)
-    const occurrenceMonth = ((totalMonths % 12) + 12) % 12
-    const day = nthWeekdayOfMonth(occurrenceYear, occurrenceMonth, rule.ordinal, rule.weekday)
+  const rawDescription = decodeHtmlEntities(event.description ?? '')
+  const explicitUrl = event.component.getFirstPropertyValue('url') as string | undefined
+  const titleLink = explicitUrl ?? extractUrl(rawDescription)
+  const description = stripUrlOnlyDescription(rawDescription, titleLink)
 
-    const occurrenceStart = zonedTimeToUtc(
-      occurrenceYear,
-      occurrenceMonth,
-      day,
-      startParts.hour,
-      startParts.minute,
-      startParts.second,
-      startTimeZone,
-    )
-
-    const occurrenceEnd = endParts
-      ? zonedTimeToUtc(
-          occurrenceYear,
-          occurrenceMonth,
-          day + dayDelta,
-          endParts.hour,
-          endParts.minute,
-          endParts.second,
-          endTimeZone,
-        )
-      : undefined
-
-    return { start: occurrenceStart, end: occurrenceEnd }
-  })
+  return {
+    title: event.summary ?? 'Untitled event',
+    date: formatDate(startInstant.toISOString()),
+    time:
+      isAllDay || !endInstant
+        ? 'All day'
+        : formatTime(startInstant.toISOString(), endInstant.toISOString()),
+    location: event.location ?? 'TBD',
+    description,
+    titleLink,
+    url: titleLink,
+    startsAt: startInstant.toISOString(),
+    endsAt: endInstant?.toISOString(),
+  }
 }
 
 export const parseGoogleCalendarIcs = (ics: string): CalendarEvent[] => {
-  const lines = unfoldIcs(ics).split(/\r?\n/)
-  const events: CalendarEvent[] = []
-  let current: Record<string, string> | null = null
+  if (!ics.trim()) return []
 
-  for (const line of lines) {
-    if (line === 'BEGIN:VEVENT') {
-      current = {}
-      continue
+  let vCalendar: ICAL.Component
+  try {
+    vCalendar = new ICAL.Component(ICAL.parse(ics))
+  } catch {
+    return []
+  }
+
+  const vEvents = vCalendar.getAllSubcomponents('vevent')
+  const masters: ICAL.Event[] = []
+  const exceptions: ICAL.Event[] = []
+
+  for (const vEvent of vEvents) {
+    const event = new ICAL.Event(vEvent)
+    if (event.isRecurrenceException()) {
+      exceptions.push(event)
+    } else {
+      masters.push(event)
     }
+  }
 
-    if (line === 'END:VEVENT') {
-      if (current?.DTSTART) {
-        const startValue = current.DTSTART
-        const endValue = current.DTEND
-        const isAllDay = /^\d{8}$/.test(startValue)
-        const startTimeZone = current.DTSTART_TZID ?? (isAllDay ? CALENDAR_TIME_ZONE : 'UTC')
-        const endTimeZone = current.DTEND_TZID ?? startTimeZone
-        const start = parseIcsDate(startValue, current.DTSTART_TZID)
-        const end = endValue ? parseIcsDate(endValue, current.DTEND_TZID) : undefined
-        const rule = parseRrule(current.RRULE)
-        const occurrences = rule
-          ? expandMonthlyByDayOccurrences(start, end, rule, startTimeZone, endTimeZone, 12)
-          : [{ start, end }]
-
-        for (const occurrence of occurrences) {
-          const rawDescription = decodeIcsValue(current.DESCRIPTION ?? '')
-          const titleLink = current.URL ?? extractUrl(rawDescription)
-          const description = stripUrlOnlyDescription(rawDescription, titleLink)
-          events.push({
-            title: current.SUMMARY ?? 'Untitled event',
-            date: formatDate(occurrence.start.toISOString()),
-            time:
-              isAllDay || !occurrence.end
-                ? 'All day'
-                : formatTime(occurrence.start.toISOString(), occurrence.end.toISOString()),
-            location: current.LOCATION ?? 'TBD',
-            description,
-            titleLink,
-            url: current.URL ?? titleLink,
-            startsAt: occurrence.start.toISOString(),
-            endsAt: occurrence.end?.toISOString(),
-          })
-        }
+  for (const exception of exceptions) {
+    for (const master of masters) {
+      if (master.uid === exception.uid) {
+        master.relateException(exception)
       }
-      current = null
+    }
+  }
+
+  const events: CalendarEvent[] = []
+
+  for (const event of masters) {
+    if (!event.startDate) continue
+
+    const startTimeZone = getTzid(event.component, 'dtstart') ?? CALENDAR_TIME_ZONE
+    const endTimeZone = getTzid(event.component, 'dtend') ?? startTimeZone
+    const hasEnd = Boolean(event.component.getFirstProperty('dtend'))
+
+    if (!event.isRecurring()) {
+      events.push(
+        toCalendarEvent(
+          event,
+          event.startDate,
+          hasEnd ? event.endDate : undefined,
+          startTimeZone,
+          endTimeZone,
+        ),
+      )
       continue
     }
 
-    if (!current) continue
+    const iterator = event.iterator()
+    for (let index = 0; index < MAX_RECURRING_OCCURRENCES; index += 1) {
+      const next = iterator.next()
+      if (!next) break
 
-    const colonIndex = line.indexOf(':')
-    if (colonIndex === -1) continue
-    const key = line.slice(0, colonIndex)
-    const value = decodeIcsValue(line.slice(colonIndex + 1).trim())
-    const [normalizedKey, ...params] = key.split(';')
-    const tzidParam = params.find((param) => param.startsWith('TZID='))
-    if (tzidParam && (normalizedKey === 'DTSTART' || normalizedKey === 'DTEND')) {
-      current[`${normalizedKey}_TZID`] = tzidParam.replace('TZID=', '')
+      const details = event.getOccurrenceDetails(next)
+      events.push(
+        toCalendarEvent(
+          event,
+          details.startDate,
+          hasEnd ? details.endDate : undefined,
+          startTimeZone,
+          endTimeZone,
+        ),
+      )
     }
-    current[normalizedKey] = value
   }
 
   return events.sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
