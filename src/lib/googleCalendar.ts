@@ -15,17 +15,30 @@ export type CalendarEvent = {
 
 const CALENDAR_TIME_ZONE = 'America/Edmonton'
 
+// Building an Intl.DateTimeFormat is expensive and a long recurring series can
+// produce thousands of occurrences, so formatters are created once and reused.
+const zonedPartsFormatters = new Map<string, Intl.DateTimeFormat>()
+
+const getZonedPartsFormatter = (timeZone: string) => {
+  let dtf = zonedPartsFormatters.get(timeZone)
+  if (!dtf) {
+    dtf = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+    zonedPartsFormatters.set(timeZone, dtf)
+  }
+  return dtf
+}
+
 const getZonedDateParts = (date: Date, timeZone: string) => {
-  const dtf = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
+  const dtf = getZonedPartsFormatter(timeZone)
 
   const parts = Object.fromEntries(
     dtf.formatToParts(date).map((part) => [part.type, part.value]),
@@ -64,21 +77,22 @@ const dateOnlyToInstant = (value: string, timeZone: string) => {
   return zonedTimeToUtc(year, month - 1, day, 0, 0, 0, timeZone)
 }
 
-const formatDate = (value: string) =>
-  new Intl.DateTimeFormat('en-CA', {
-    month: 'long',
-    day: '2-digit',
-    year: 'numeric',
-    timeZone: CALENDAR_TIME_ZONE,
-  }).format(new Date(value))
+const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+  month: 'long',
+  day: '2-digit',
+  year: 'numeric',
+  timeZone: CALENDAR_TIME_ZONE,
+})
+
+const timeFormatter = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: CALENDAR_TIME_ZONE,
+})
+
+const formatDate = (value: string) => dateFormatter.format(new Date(value))
 
 const formatTime = (start: string, end?: string) => {
-  const timeFormatter = new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: CALENDAR_TIME_ZONE,
-  })
-
   const startTime = timeFormatter.format(new Date(start))
   if (!end) return startTime
   const endTime = timeFormatter.format(new Date(end))
@@ -151,23 +165,9 @@ const stripUrlOnlyDescription = (value: string, url?: string) => {
   return value
 }
 
-const MONTHS_OF_PAST_OCCURRENCES = 6
 const MONTHS_OF_FUTURE_OCCURRENCES = 18
 
-/**
- * Recurring series are expanded from DTSTART, so an unbounded rule that started
- * years ago would otherwise yield only stale occurrences. The iteration cap is
- * generous enough for a daily series running for decades, so the walk always
- * reaches the live window before giving up.
- */
 const MAX_RECURRENCE_ITERATIONS = 20_000
-
-/**
- * Past and future occurrences get separate budgets. A shared budget would let a
- * frequent series (a daily rule, say) spend the whole allowance on past dates
- * and surface no upcoming events at all.
- */
-const MAX_PAST_OCCURRENCES_PER_SERIES = 12
 const MAX_FUTURE_OCCURRENCES_PER_SERIES = 48
 
 const addMonths = (date: Date, months: number) => {
@@ -257,7 +257,6 @@ export const parseGoogleCalendarIcs = (
 ): CalendarEvent[] => {
   if (!ics.trim()) return []
 
-  const windowStart = addMonths(now, -MONTHS_OF_PAST_OCCURRENCES).getTime()
   const windowEnd = addMonths(now, MONTHS_OF_FUTURE_OCCURRENCES).getTime()
 
   let vCalendar: ICAL.Component
@@ -314,7 +313,7 @@ export const parseGoogleCalendarIcs = (
 
     const iterator = event.iterator()
     const nowMs = now.getTime()
-    const recentPast: ICAL.Time[] = []
+    const past: ICAL.Time[] = []
     const upcoming: ICAL.Time[] = []
 
     for (let index = 0; index < MAX_RECURRENCE_ITERATIONS; index += 1) {
@@ -323,24 +322,19 @@ export const parseGoogleCalendarIcs = (
       const next = iterator.next()
       if (!next) break
 
-      const approxStart = next.toUnixTime() * 1000
-      if (approxStart > windowEnd + DAY_MS) break
-      if (approxStart < windowStart - DAY_MS) continue
+      if (next.toUnixTime() * 1000 > windowEnd + DAY_MS) break
 
       const occurrenceStart = icalTimeToInstant(next, startTimeZone).getTime()
-
       if (occurrenceStart > windowEnd) break
-      if (occurrenceStart < windowStart) continue
 
       if (occurrenceStart < nowMs) {
-        recentPast.push(next)
-        if (recentPast.length > MAX_PAST_OCCURRENCES_PER_SERIES) recentPast.shift()
+        past.push(next)
       } else {
         upcoming.push(next)
       }
     }
 
-    for (const occurrence of [...recentPast, ...upcoming]) {
+    for (const occurrence of [...past, ...upcoming]) {
       const details = event.getOccurrenceDetails(occurrence)
       const item = details.item ?? event
 

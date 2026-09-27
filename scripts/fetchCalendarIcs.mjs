@@ -11,8 +11,10 @@ const RETRY_DELAY_MS = 2_000
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export const isUsableIcs = (ics) =>
-  typeof ics === 'string' && ics.includes('BEGIN:VCALENDAR') && ics.includes('END:VCALENDAR')
+const CALENDAR_WITH_EVENT =
+  /^BEGIN:VCALENDAR\r?$[\s\S]*?^BEGIN:VEVENT\r?$[\s\S]*?^END:VEVENT\r?$[\s\S]*?^END:VCALENDAR\r?$/m
+
+export const isUsableIcs = (ics) => typeof ics === 'string' && CALENDAR_WITH_EVENT.test(ics)
 
 export const fetchIcs = async ({
   url = CALENDAR_ICS_URL,
@@ -30,7 +32,7 @@ export const fetchIcs = async ({
     const ics = await response.text()
     if (!isUsableIcs(ics)) {
       throw new Error(
-        `Calendar ICS feed did not contain a VCALENDAR body (received ${ics.length} bytes)`,
+        `Calendar ICS feed did not contain a VCALENDAR with at least one VEVENT (received ${ics.length} bytes)`,
       )
     }
 
@@ -77,12 +79,9 @@ export const run = async ({
     const ics = await fetchIcsWithRetries(retryOptions)
     await writeFile(destPath, ics, 'utf-8')
     console.log(`Wrote calendar ICS feed to ${destPath}`)
-    return
   } catch (error) {
     const existing = await readExistingFeed(destPath)
 
-    // Keeping the last known-good feed is better than publishing an empty
-    // calendar, which would silently remove every event from the live site.
     if (isUsableIcs(existing)) {
       console.warn(
         `Calendar feed unavailable (${error.message}); keeping the existing feed at ${destPath}.`,

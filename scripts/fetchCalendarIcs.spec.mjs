@@ -6,6 +6,7 @@ import { fetchIcsWithRetries, isUsableIcs, run } from './fetchCalendarIcs.mjs'
 
 const VALID_ICS = 'BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Meeting\nEND:VEVENT\nEND:VCALENDAR'
 const CACHED_ICS = 'BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Cached\nEND:VEVENT\nEND:VCALENDAR'
+const EMPTY_CALENDAR_ICS = 'BEGIN:VCALENDAR\nEND:VCALENDAR'
 
 const okResponse = (body) => ({ ok: true, status: 200, statusText: 'OK', text: async () => body })
 const errorResponse = (status = 500, statusText = 'Server Error') => ({ ok: false, status, statusText })
@@ -106,11 +107,44 @@ describe('run', () => {
 
     await expect(readFile(outputPath, 'utf-8')).resolves.toBe(CACHED_ICS)
   })
+
+  it('GIVEN the feed returns a calendar with no events WHEN run THEN it does not overwrite the cached feed', async () => {
+    const outputPath = join(dir, 'calendar-ics')
+    await writeFile(outputPath, CACHED_ICS, 'utf-8')
+    const fetchImpl = vi.fn().mockResolvedValue(okResponse(EMPTY_CALENDAR_ICS))
+
+    await run({ outputPath, fetchImpl, sleepImpl: vi.fn(), maxAttempts: 2 })
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    await expect(readFile(outputPath, 'utf-8')).resolves.toBe(CACHED_ICS)
+  })
+
+  it('GIVEN a cached calendar with no events WHEN the fetch fails THEN it refuses to keep it', async () => {
+    const outputPath = join(dir, 'calendar-ics')
+    await writeFile(outputPath, EMPTY_CALENDAR_ICS, 'utf-8')
+    const fetchImpl = vi.fn().mockRejectedValue(new Error('network down'))
+
+    await expect(run({ outputPath, fetchImpl, sleepImpl: vi.fn(), maxAttempts: 2 })).rejects.toThrow(
+      /Refusing to publish an empty calendar/,
+    )
+  })
 })
 
 describe('isUsableIcs', () => {
   it.each([
     { label: 'a full calendar', input: VALID_ICS, expected: true },
+    { label: 'a CRLF calendar', input: VALID_ICS.replaceAll('\n', '\r\n'), expected: true },
+    { label: 'a calendar with no events', input: EMPTY_CALENDAR_ICS, expected: false },
+    {
+      label: 'a calendar with an unterminated event',
+      input: 'BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Meeting\nEND:VCALENDAR',
+      expected: false,
+    },
+    {
+      label: 'a calendar that only mentions VEVENT in a value',
+      input: 'BEGIN:VCALENDAR\nX-WR-CALDESC:BEGIN:VEVENT END:VEVENT\nEND:VCALENDAR',
+      expected: false,
+    },
     { label: 'an empty string', input: '', expected: false },
     { label: 'an HTML error page', input: '<html>Service unavailable</html>', expected: false },
     { label: 'a truncated calendar', input: 'BEGIN:VCALENDAR\nBEGIN:VEVENT', expected: false },

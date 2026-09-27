@@ -95,12 +95,39 @@ END:VCALENDAR`, { now: NOW })
     expect(events.every((event) => event.title === 'RMGR Monthly Meeting')).toBe(true)
   })
 
-  it('GIVEN a series older than the retained window WHEN parsing THEN stale occurrences are dropped', () => {
+  it('GIVEN a series that began years ago WHEN parsing THEN every past occurrence is retained', () => {
     const events = parseGoogleCalendarIcs(monthlySeries('20180920'), { now: NOW })
 
-    const staleCutoff = new Date('2026-01-01T00:00:00.000Z').getTime()
+    const past = events.filter((event) => Date.parse(event.startsAt) < NOW.getTime())
 
-    expect(events.every((event) => Date.parse(event.startsAt) > staleCutoff)).toBe(true)
+    // Third Thursdays from Sep 2018 through Sep 2026 inclusive: 8 years * 12 + 1.
+    expect(past).toHaveLength(97)
+    expect(past[0]).toMatchObject({ date: 'September 20, 2018', time: '7:15 PM - 8:45 PM' })
+    expect(past[past.length - 1].date).toBe('September 17, 2026')
+  })
+
+  it('GIVEN a recurring series with a past exception WHEN parsing THEN the historic exception is applied', () => {
+    const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:rmgr-monthly
+SUMMARY:RMGR Monthly Meeting
+DTSTART;TZID=America/Edmonton:20180920T191500
+DTEND;TZID=America/Edmonton:20180920T204500
+RRULE:FREQ=MONTHLY;BYDAY=3TH
+END:VEVENT
+BEGIN:VEVENT
+UID:rmgr-monthly
+RECURRENCE-ID;TZID=America/Edmonton:20190321T191500
+SUMMARY:RMGR Annual General Meeting
+DTSTART;TZID=America/Edmonton:20190321T183000
+DTEND;TZID=America/Edmonton:20190321T210000
+END:VEVENT
+END:VCALENDAR`, { now: NOW })
+
+    expect(events.find((event) => event.date === 'March 21, 2019')).toMatchObject({
+      title: 'RMGR Annual General Meeting',
+      time: '6:30 PM - 9:00 PM',
+    })
   })
 
   it('GIVEN a recurring series WHEN parsing THEN it keeps recent past occurrences for the past-events view', () => {
@@ -114,13 +141,14 @@ END:VCALENDAR`, { now: NOW })
   it('GIVEN an unbounded series WHEN parsing THEN occurrences stop at the forward window', () => {
     const events = parseGoogleCalendarIcs(monthlySeries('20180920'), { now: NOW })
 
-    const horizon = new Date('2028-06-26T12:00:00.000Z').getTime()
+    const horizon = new Date('2028-03-26T12:00:00.000Z').getTime()
+    const upcoming = events.filter((event) => Date.parse(event.startsAt) >= NOW.getTime())
 
-    expect(events.length).toBeLessThan(60)
+    expect(upcoming.length).toBeLessThanOrEqual(18)
     expect(events.every((event) => Date.parse(event.startsAt) <= horizon)).toBe(true)
   })
 
-  it('GIVEN the same series at two different times WHEN parsing THEN the window follows the current date', () => {
+  it('GIVEN the same series at two different times WHEN parsing THEN the forward window follows the current date', () => {
     const earlier = parseGoogleCalendarIcs(monthlySeries('20180920'), {
       now: new Date('2026-09-26T12:00:00.000Z'),
     })
@@ -128,8 +156,10 @@ END:VCALENDAR`, { now: NOW })
       now: new Date('2030-09-26T12:00:00.000Z'),
     })
 
-    expect(later[0].startsAt).not.toBe(earlier[0].startsAt)
-    expect(Date.parse(later[0].startsAt)).toBeGreaterThan(Date.parse(earlier[0].startsAt))
+    const lastStart = (events: typeof earlier) => Date.parse(events[events.length - 1].startsAt)
+
+    expect(later[0].startsAt).toBe(earlier[0].startsAt)
+    expect(lastStart(later)).toBeGreaterThan(lastStart(earlier))
     expect(later.filter((e) => Date.parse(e.startsAt) >= Date.parse('2030-09-26')).length).toBeGreaterThan(0)
   })
 
@@ -147,7 +177,7 @@ END:VCALENDAR`, { now: NOW })
     expect(events[0].title).toBe('Historic Open House')
   })
 
-  it('GIVEN a frequent long-running series WHEN parsing THEN past occurrences do not crowd out upcoming ones', () => {
+  it('GIVEN a frequent long-running series WHEN parsing THEN it keeps its full history and still reaches upcoming ones', () => {
     const events = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
 BEGIN:VEVENT
 SUMMARY:Daily Work Session
@@ -161,7 +191,9 @@ END:VCALENDAR`, { now: NOW })
     const past = events.filter((event) => Date.parse(event.startsAt) < NOW.getTime())
 
     expect(upcoming.length).toBeGreaterThan(0)
-    expect(past.length).toBeLessThanOrEqual(12)
+    expect(past[0].date).toBe('January 05, 1990')
+    // Every day from 1990-01-05 through 2026-09-25 inclusive.
+    expect(past).toHaveLength(13_413)
   })
 
   it('GIVEN multiple events WHEN parsing THEN it sorts them from soonest to latest', () => {
