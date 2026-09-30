@@ -65,14 +65,13 @@ defineOptions({ name: 'GScaleInfo' })
             <v-col class="pe-md-6 mb-6 mb-md-0" cols="12" md="6">
               <div class="text-h5 font-weight-bold mb-3">Rise in Popularity</div>
               <p class="body-copy mb-4 opacity-90">
-                By the mid-1980s, G-Scale had become well established. A broad variety of
+                By the mid-1980s, G-Scale was well established. A variety of
                 high-fidelity locomotives, rolling stock, modular buildings, and landscape
-                accessories became widely available globally.
+                accessories were widely available globally.
               </p>
               <p class="body-copy opacity-90">
                 Industry-focused publications inspired thousands of modelers to push
-                boundaries—blending creative modeling and meticulous scale craftsmanship with
-                outdoor horticulture.
+                themselves—blending model-making with horticulture and landscaping.
               </p>
             </v-col>
 
@@ -84,9 +83,8 @@ defineOptions({ name: 'GScaleInfo' })
                 weather and snow year-round.
               </p>
               <p class="opacity-90">
-                Many modern trains feature onboard digital sound profiles, synchronized steam smoke
-                generation, and directional lighting rigs that deliver an ultra-realistic scale
-                operational experience.
+                Many modern trains feature onboard digital sound profiles, steam/smoke, and
+                directional lighting rigs that deliver a semi-realistic operational experience.
               </p>
             </v-col>
           </v-row>
@@ -115,9 +113,5 @@ defineOptions({ name: 'GScaleInfo' })
   max-height: 420px;
   object-fit: cover;
   display: block;
-}
-
-a.text-secondary:hover {
-  opacity: 0.83;
 }
 </style>
