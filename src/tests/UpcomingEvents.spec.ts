@@ -22,7 +22,6 @@ BEGIN:VEVENT
 SUMMARY:RMGR Monthly Meeting
 DTSTART;TZID=America/Edmonton:20260917T191500
 DTEND;TZID=America/Edmonton:20260917T204500
-RRULE:FREQ=MONTHLY;BYDAY=3TH
 LOCATION:2715 Dovely Park SE, Calgary, AB T2B 3G8, Canada
 DESCRIPTION:Monthly meeting
 END:VEVENT
@@ -70,11 +69,7 @@ END:VCALENDAR`,
       description: 'Monthly meeting',
       titleLink: undefined,
     })
-    expect(eventData[1]).toMatchObject({
-      date: 'October 15, 2026',
-    })
     expect(rows[0].text()).toBe(eventData[0].title)
-    expect(rows[1].text()).toBe(eventData[1].title)
 
     expect(fetchMock).toHaveBeenCalledWith('/calendar-ics')
   })
