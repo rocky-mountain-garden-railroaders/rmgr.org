@@ -20,15 +20,8 @@ const mobileBreakpoint = '(max-width: 1279.98px)'
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
 
 const isSlideshowPaused = ref(false)
-const isPointerOverViewer = ref(false)
-const isFocusWithinViewer = ref(false)
-const isViewerInteracting = computed(() => isPointerOverViewer.value || isFocusWithinViewer.value)
 const shouldAutoplay = computed(
-  () =>
-    isLightboxOpen.value &&
-    hasMultipleImages.value &&
-    !isSlideshowPaused.value &&
-    !isViewerInteracting.value,
+  () => isLightboxOpen.value && hasMultipleImages.value && !isSlideshowPaused.value,
 )
 
 const prefersReducedMotion = () => window.matchMedia(reducedMotionQuery).matches
@@ -57,13 +50,6 @@ const openLightbox = (groupIndex: number, imageIndex: number) => {
 
 const toggleSlideshow = () => {
   isSlideshowPaused.value = !isSlideshowPaused.value
-}
-
-const onViewerFocusOut = (event: FocusEvent) => {
-  const viewer = event.currentTarget as HTMLElement
-  if (!viewer.contains(event.relatedTarget as Node | null)) {
-    isFocusWithinViewer.value = false
-  }
 }
 
 const showPreviousImage = () => {
@@ -97,14 +83,6 @@ const startSlideshowTimer = () => {
   }, slideshowDelayMs)
 }
 
-watch(isLightboxOpen, (isOpen) => {
-  // The viewer unmounts on close, so mouseleave/focusout never fire to reset these.
-  if (!isOpen) {
-    isPointerOverViewer.value = false
-    isFocusWithinViewer.value = false
-  }
-})
-
 watch([shouldAutoplay, activeGroupIndex, activeImageIndex], startSlideshowTimer)
 
 onBeforeUnmount(() => {
@@ -131,6 +109,9 @@ onUnmounted(() => {
             <v-card-title class="text-h4 font-weight-black text-primary pa-0">
               Image Gallery
             </v-card-title>
+            <v-card-subtitle class="pa-0 mt-2 text-body-1 text-medium-emphasis text-wrap">
+              Each preview below is a gallery folder &mdash; click one to browse all of its photos.
+            </v-card-subtitle>
           </v-card-item>
         </v-card>
       </v-col>
@@ -164,10 +145,6 @@ onUnmounted(() => {
           v-if="activeImage"
           class="bg-surface rounded-lg overflow-hidden lightbox-viewer"
           flat
-          @focusin="isFocusWithinViewer = true"
-          @focusout="onViewerFocusOut"
-          @mouseenter="isPointerOverViewer = true"
-          @mouseleave="isPointerOverViewer = false"
         >
           <div class="modal-image-shell">
             <v-img
@@ -184,6 +161,7 @@ onUnmounted(() => {
               class="modal-slideshow-toggle"
               color="white"
               icon
+              :title="isSlideshowPaused ? 'Play slideshow' : 'Pause slideshow'"
               variant="text"
               @click="toggleSlideshow"
             >

@@ -153,28 +153,11 @@ describe('ImageGallery', () => {
       expect(currentSrc(wrapper)).toBe(group.images[1].src)
     })
 
-    it('GIVEN the pointer is over the viewer WHEN the delay elapses THEN it does not advance', async () => {
+    it('GIVEN the pointer is over the viewer WHEN the delay elapses THEN the slideshow still advances', async () => {
       const wrapper = await openFirstGallery()
       const viewer = wrapper.find('.lightbox-viewer')
 
       await viewer.trigger('mouseenter')
-      await advance(SLIDESHOW_DELAY_MS * 3)
-      expect(currentSrc(wrapper)).toBe(group.images[0].src)
-
-      await viewer.trigger('mouseleave')
-      await advance()
-      expect(currentSrc(wrapper)).toBe(group.images[1].src)
-    })
-
-    it('GIVEN keyboard focus is inside the viewer WHEN the delay elapses THEN it does not advance', async () => {
-      const wrapper = await openFirstGallery()
-      const viewer = wrapper.find('.lightbox-viewer')
-
-      await viewer.trigger('focusin')
-      await advance(SLIDESHOW_DELAY_MS * 3)
-      expect(currentSrc(wrapper)).toBe(group.images[0].src)
-
-      await viewer.trigger('focusout', { relatedTarget: null })
       await advance()
       expect(currentSrc(wrapper)).toBe(group.images[1].src)
     })

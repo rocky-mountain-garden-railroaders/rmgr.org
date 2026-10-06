@@ -49,4 +49,12 @@ describe('GallerySection', () => {
 
     expect(wrapper.find('.image-title-overlay').text()).toBe('Featured Layouts')
   })
+
+  it('GIVEN a gallery with multiple images WHEN rendering THEN the hit area has a hover hint naming the gallery and photo count', () => {
+    const wrapper = mountSection()
+
+    expect(wrapper.find('button.image-hit-area').attributes('title')).toBe(
+      'View Featured Layouts gallery (2 photos)',
+    )
+  })
 })

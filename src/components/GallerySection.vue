@@ -24,7 +24,7 @@ const emit = defineEmits<{
 <template>
   <v-card class="gallery-section h-100 d-flex flex-column" color="transparent" flat>
     <v-card class="image-shell overflow-hidden bg-surface rounded-lg elevation-3 w-100 d-flex flex-column flex-grow-1" flat hover>
-      <button class="image-hit-area" type="button" @click="emit('openImage', 0)">
+      <button class="image-hit-area" type="button" :title="`View ${title} gallery (${images.length} photo${images.length === 1 ? '' : 's'})`" @click="emit('openImage', 0)">
         <v-img :alt="images[0].alt" :aspect-ratio="4 / 3" :src="images[0].src" class="bg-grey-lighten-2" cover>
           <template #placeholder>
             <v-row align="center" class="fill-height ma-0" justify="center">
