@@ -1,22 +1,26 @@
 {
   "galleries": {
-    "Super Train 2024": {
+    "Supertrain 2024": {
       "title": "",
       "description": "",
       "images": {
-        "CS5_1317-CR3_DxO_DeepPRIME.webp": {
-          "alt": "",
-          "caption": "The Rocky Mountain Garden Railroaders layout at Super Train 2024."
-        },
         "CS5_1328-CR3_DxO_DeepPRIME.webp": {
           "alt": "",
-          "caption": "Visitors take in the garden railroad displays at Super Train 2024."
+          "caption": "Visitors take in the garden railroad displays at Supertrain 2024."
+        },
+        "CS5_1317-CR3_DxO_DeepPRIME.webp": {
+          "alt": "",
+          "caption": "The Rocky Mountain Garden Railroaders layout at Supertrain 2024."
         },
         "CS5_1377-CR3_DxO_DeepPRIME.webp": {
           "alt": "",
           "caption": ""
         },
         "CS5_1378-CR3_DxO_DeepPRIME.webp": {
+          "alt": "",
+          "caption": ""
+        },
+        "CS5_1782-CR3_DxO_DeepPRIME.webp": {
           "alt": "",
           "caption": ""
         },
@@ -124,10 +128,6 @@
           "alt": "",
           "caption": ""
         },
-        "CS5_1782-CR3_DxO_DeepPRIME.webp": {
-          "alt": "",
-          "caption": ""
-        },
         "CS5_1797-CR3_DxO_DeepPRIME.webp": {
           "alt": "",
           "caption": ""
@@ -146,13 +146,17 @@
         }
       }
     },
-    "Super Train 2025": {
+    "Supertrain 2025": {
       "title": "",
       "description": "",
       "images": {
+        "CS7_3898.webp": {
+          "alt": "",
+          "caption": ""
+        },
         "CS7_3611.webp": {
           "alt": "",
-          "caption": "The Rocky Mountain Garden Railroaders at Super Train 2025."
+          "caption": "The Rocky Mountain Garden Railroaders at Supertrain 2025."
         },
         "CS7_3612.webp": {
           "alt": "",
@@ -203,10 +207,6 @@
           "caption": ""
         },
         "CS7_3896.webp": {
-          "alt": "",
-          "caption": ""
-        },
-        "CS7_3898.webp": {
           "alt": "",
           "caption": ""
         },

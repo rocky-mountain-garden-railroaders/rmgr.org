@@ -14,15 +14,15 @@ const jsonResponse = (body) => ({ ok: true, status: 200, statusText: 'OK', json:
 describe('buildManifest', () => {
   it('GIVEN folder/image objects WHEN building THEN they are grouped and sorted by folder and file', () => {
     const { manifest, skipped } = buildManifest([
-      'Super Train 2025/b.jpg',
-      'Super Train 2024/z.JPG',
-      'Super Train 2025/a.png',
+      'Supertrain 2025/b.jpg',
+      'Supertrain 2024/z.JPG',
+      'Supertrain 2025/a.png',
     ])
 
     expect(manifest).toEqual({
       galleries: {
-        'Super Train 2024': ['z.JPG'],
-        'Super Train 2025': ['a.png', 'b.jpg'],
+        'Supertrain 2024': ['z.JPG'],
+        'Supertrain 2025': ['a.png', 'b.jpg'],
       },
     })
     expect(skipped).toEqual([])
@@ -30,18 +30,18 @@ describe('buildManifest', () => {
 
   it('GIVEN folder placeholders, root files, nested paths and non-images WHEN building THEN they are left out', () => {
     const { manifest, skipped } = buildManifest([
-      'Super Train 2024/',
+      'Supertrain 2024/',
       'loose.jpg',
-      'Super Train 2024/raw/CS5_1317.jpg',
-      'Super Train 2024/notes.txt',
-      'Super Train 2024/keep.webp',
+      'Supertrain 2024/raw/CS5_1317.jpg',
+      'Supertrain 2024/notes.txt',
+      'Supertrain 2024/keep.webp',
     ])
 
-    expect(manifest).toEqual({ galleries: { 'Super Train 2024': ['keep.webp'] } })
+    expect(manifest).toEqual({ galleries: { 'Supertrain 2024': ['keep.webp'] } })
     expect(skipped).toEqual([
       'loose.jpg',
-      'Super Train 2024/raw/CS5_1317.jpg',
-      'Super Train 2024/notes.txt',
+      'Supertrain 2024/raw/CS5_1317.jpg',
+      'Supertrain 2024/notes.txt',
     ])
   })
 })
