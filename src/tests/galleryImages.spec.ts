@@ -114,13 +114,48 @@ describe('buildGalleryGroups', () => {
     expect(buildGalleryGroups({ 'Supertrain 2026': {} })).toEqual([])
   })
 
-  it('GIVEN several folders WHEN building THEN groups are sorted by title', () => {
-    const groups = buildGalleryGroups({
-      'Supertrain 2025': { 'a.jpg': '/a.jpg' },
-      'Supertrain 2024': { 'b.jpg': '/b.jpg' },
-    })
+  it('GIVEN galleries with an order number WHEN building THEN the highest number comes first', () => {
+    const groups = buildGalleryGroups(
+      {
+        'Supertrain 2024': { 'b.jpg': '/b.jpg' },
+        'Supertrain 2025': { 'a.jpg': '/a.jpg' },
+        'Zoo Lights': { 'c.jpg': '/c.jpg' },
+      },
+      {
+        'Supertrain 2024': { order: 1 },
+        'Supertrain 2025': { order: 2 },
+        'Zoo Lights': { order: 3 },
+      },
+    )
 
-    expect(groups.map((group) => group.title)).toEqual(['Supertrain 2024', 'Supertrain 2025'])
+    expect(groups.map((group) => group.title)).toEqual([
+      'Zoo Lights',
+      'Supertrain 2025',
+      'Supertrain 2024',
+    ])
+  })
+
+  it('GIVEN equal, missing or invalid order numbers WHEN building THEN ties are alphabetical and unnumbered galleries go last', () => {
+    const groups = buildGalleryGroups(
+      {
+        'Open House': { 'a.jpg': '/a.jpg' },
+        'Field Trip': { 'b.jpg': '/b.jpg' },
+        'Club Layouts': { 'c.jpg': '/c.jpg' },
+        Archive: { 'd.jpg': '/d.jpg' },
+      },
+      {
+        'Open House': { order: 1 },
+        'Field Trip': { order: 1 },
+        Archive: { order: '5' as unknown as number },
+      },
+    )
+
+    expect(groups.map((group) => group.title)).toEqual([
+      'Field Trip',
+      'Open House',
+      'Archive',
+      'Club Layouts',
+    ])
   })
 })
 

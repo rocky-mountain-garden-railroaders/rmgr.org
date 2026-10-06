@@ -3,6 +3,7 @@
     "Supertrain 2024": {
       "title": "",
       "description": "",
+      "order": 1,
       "images": {
         "CS5_1328-CR3_DxO_DeepPRIME.webp": {
           "alt": "",
@@ -149,6 +150,7 @@
     "Supertrain 2025": {
       "title": "",
       "description": "",
+      "order": 2,
       "images": {
         "CS7_3898.webp": {
           "alt": "",

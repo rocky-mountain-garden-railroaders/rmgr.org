@@ -20,6 +20,8 @@ export type GalleryImageMetadata = {
 export type GalleryFolderMetadata = {
   title?: string
   description?: string
+  /** Position in the gallery list: 1 is the oldest gallery, and higher numbers are listed first. */
+  order?: number
   images?: Record<string, GalleryImageMetadata>
 }
 
@@ -36,6 +38,12 @@ const imageModules = import.meta.glob('../assets/images/galleries/**/*.{jpg,jpeg
 const GALLERIES_SEGMENT = 'galleries'
 
 const humanize = (value: string) => value.replace(/[-_]+/g, ' ').trim()
+
+// Galleries without a valid order sort after every numbered gallery.
+const galleryOrder = (metadata?: GalleryFolderMetadata) => {
+  const order = metadata?.order
+  return typeof order === 'number' && Number.isFinite(order) ? order : Number.NEGATIVE_INFINITY
+}
 
 export const splitGalleryPath = (path: string) => {
   const parts = path.split('/').filter((part) => part && part !== '.' && part !== '..')
@@ -85,13 +93,20 @@ export const buildGalleryGroups = (
       })
 
       return {
-        title: groupTitle(folder),
-        description: folderMetadata?.description?.trim() ?? '',
-        images,
+        group: {
+          title: groupTitle(folder),
+          description: folderMetadata?.description?.trim() ?? '',
+          images,
+        },
+        order: galleryOrder(folderMetadata),
       }
     })
-    .filter((group) => group.images.length > 0)
-    .sort((left, right) => left.title.localeCompare(right.title))
+    .filter(({ group }) => group.images.length > 0)
+    .sort((left, right) => {
+      if (left.order !== right.order) return left.order < right.order ? 1 : -1
+      return left.group.title.localeCompare(right.group.title)
+    })
+    .map(({ group }) => group)
 }
 
 const sourcesByFolder = Object.entries(imageModules).reduce<Record<string, Record<string, string>>>(
