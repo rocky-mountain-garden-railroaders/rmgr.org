@@ -110,7 +110,7 @@ onUnmounted(() => {
               Image Gallery
             </v-card-title>
             <v-card-subtitle class="pa-0 mt-2 text-body-1 text-medium-emphasis text-wrap">
-              Each preview below is a gallery folder &mdash; click one to browse all of its photos.
+              Each preview below is a gallery folder &mdash; click one to browse a slideshow of all of its photos.
             </v-card-subtitle>
           </v-card-item>
         </v-card>
