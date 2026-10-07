@@ -63,6 +63,26 @@ const ignoreClickAfterSelection = (event: MouseEvent) => {
   }
 }
 
+const NON_MAPPABLE_LOCATIONS = /^(tbd|tba|tbc|online|virtual|zoom|remote|n\/?a|none)$/i
+
+const isMappableLocation = (location: string) => {
+  const value = location.trim()
+  return value !== '' && !NON_MAPPABLE_LOCATIONS.test(value) && !/^[a-z][a-z\d+.-]*:\/\//i.test(value)
+}
+
+const mapsUrl = (location: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
+
+const openInMaps = (event: Event, location: string) => {
+  event.preventDefault()
+  event.stopPropagation()
+
+  const selection = window.getSelection()
+  if (event.type === 'click' && selection && !selection.isCollapsed) return
+
+  window.open(mapsUrl(location), '_blank', 'noopener,noreferrer')
+}
+
 const togglePastEvents = () => {
   showPastEvents.value = !showPastEvents.value
 }
@@ -186,12 +206,31 @@ defineExpose({
                       {{ event.description }}
                     </p>
                   </div>
-                  <SplitFlapText
-                    :delay="rowDelay(index) + 200"
-                    :text="event.location"
-                    class="board-cell board-location"
-                    tiles
-                  />
+                  <span
+                    v-if="isMappableLocation(event.location)"
+                    :aria-label="`Open ${event.location} in Google Maps`"
+                    class="board-cell board-location-cell"
+                    role="link"
+                    tabindex="0"
+                    @click="openInMaps($event, event.location)"
+                    @keydown.enter="openInMaps($event, event.location)"
+                  >
+                    <SplitFlapText
+                      :delay="rowDelay(index) + 200"
+                      :text="event.location"
+                      class="board-location"
+                      tiles
+                    />
+                  </span>
+                  <span v-else class="board-cell board-location-cell">
+                    <SplitFlapText
+                      v-if="event.location"
+                      :delay="rowDelay(index) + 200"
+                      :text="event.location"
+                      class="board-location"
+                      tiles
+                    />
+                  </span>
                   <div class="board-cell board-link-col event-action-col">
                     <v-icon
                       v-if="event.url"
@@ -374,6 +413,33 @@ defineExpose({
   line-height: 1.4;
 }
 
+.board-location-cell {
+  position: relative;
+  justify-self: start;
+  margin: -0.3rem -0.4rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 4px;
+  outline: 1px dashed transparent;
+  transition:
+    outline-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.board-location-cell[role='link'] {
+  cursor: pointer;
+}
+
+.board-location-cell[role='link']:hover,
+.board-location-cell[role='link']:focus-visible {
+  background-color: rgba(var(--v-theme-secondary), 0.12);
+  outline-color: var(--board-amber);
+}
+
+.board-location-cell[role='link']:focus-visible {
+  outline-style: solid;
+  outline-width: 2px;
+}
+
 .board-link-col {
   display: flex;
   justify-content: flex-end;
@@ -504,7 +570,7 @@ defineExpose({
     grid-area: event;
   }
 
-  .board-location {
+  .board-location-cell {
     grid-area: location;
   }
 

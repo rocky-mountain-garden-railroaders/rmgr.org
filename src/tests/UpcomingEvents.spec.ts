@@ -338,4 +338,75 @@ END:VCALENDAR`,
     expect(wrapper.find('a.event-card--clickable .board-link-icon').exists()).toBe(true)
     expect(wrapper.text()).not.toMatch(/on time|departed|now boarding/i)
   })
+
+  it('GIVEN an event with an address WHEN the address is clicked THEN Google Maps opens without following the row link', async () => {
+    const openMock = vi.fn()
+    vi.stubGlobal('open', openMock)
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Linked Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+DESCRIPTION:More info at https://example.com/details
+LOCATION:2715 Dovely Park SE, Calgary
+END:VEVENT
+END:VCALENDAR`,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = mount(UpcomingEvents)
+    await Promise.resolve()
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+
+    const address = wrapper.find('a.event-card--clickable .board-location-cell')
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    address.element.dispatchEvent(click)
+
+    expect(openMock).toHaveBeenCalledWith(
+      'https://www.google.com/maps/search/?api=1&query=2715%20Dovely%20Park%20SE%2C%20Calgary',
+      '_blank',
+      'noopener,noreferrer',
+    )
+    expect(click.defaultPrevented).toBe(true)
+  })
+
+  it.each(['Online', 'TBD'])(
+    'GIVEN a %s location WHEN the board renders THEN it shows as plain text without a Maps action',
+    async (location) => {
+      const openMock = vi.fn()
+      vi.stubGlobal('open', openMock)
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Placeholder Location Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`,
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      const wrapper = mount(UpcomingEvents)
+      await Promise.resolve()
+      await Promise.resolve()
+      await nextTick()
+      await Promise.resolve()
+      await nextTick()
+
+      const cell = wrapper.find('.board-location-cell')
+      expect(cell.text()).toContain(location)
+      expect(cell.attributes('role')).toBeUndefined()
+      expect(cell.attributes('tabindex')).toBeUndefined()
+
+      cell.element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      expect(openMock).not.toHaveBeenCalled()
+    },
+  )
 })
