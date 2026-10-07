@@ -63,6 +63,13 @@ const ignoreClickAfterSelection = (event: MouseEvent) => {
   }
 }
 
+const NON_MAPPABLE_LOCATIONS = /^(tbd|tba|tbc|online|virtual|zoom|remote|n\/?a|none)$/i
+
+const isMappableLocation = (location: string) => {
+  const value = location.trim()
+  return value !== '' && !NON_MAPPABLE_LOCATIONS.test(value) && !/^[a-z][a-z\d+.-]*:\/\//i.test(value)
+}
+
 const mapsUrl = (location: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
 
@@ -200,7 +207,7 @@ defineExpose({
                     </p>
                   </div>
                   <span
-                    v-if="event.location"
+                    v-if="isMappableLocation(event.location)"
                     :aria-label="`Open ${event.location} in Google Maps`"
                     class="board-cell board-location-cell"
                     role="link"
@@ -215,7 +222,15 @@ defineExpose({
                       tiles
                     />
                   </span>
-                  <span v-else class="board-cell board-location-cell"></span>
+                  <span v-else class="board-cell board-location-cell">
+                    <SplitFlapText
+                      v-if="event.location"
+                      :delay="rowDelay(index) + 200"
+                      :text="event.location"
+                      class="board-location"
+                      tiles
+                    />
+                  </span>
                   <div class="board-cell board-link-col event-action-col">
                     <v-icon
                       v-if="event.url"

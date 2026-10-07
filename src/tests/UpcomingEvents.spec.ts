@@ -374,4 +374,39 @@ END:VCALENDAR`,
     )
     expect(click.defaultPrevented).toBe(true)
   })
+
+  it.each(['Online', 'TBD'])(
+    'GIVEN a %s location WHEN the board renders THEN it shows as plain text without a Maps action',
+    async (location) => {
+      const openMock = vi.fn()
+      vi.stubGlobal('open', openMock)
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Placeholder Location Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`,
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      const wrapper = mount(UpcomingEvents)
+      await Promise.resolve()
+      await Promise.resolve()
+      await nextTick()
+      await Promise.resolve()
+      await nextTick()
+
+      const cell = wrapper.find('.board-location-cell')
+      expect(cell.text()).toContain(location)
+      expect(cell.attributes('role')).toBeUndefined()
+      expect(cell.attributes('tabindex')).toBeUndefined()
+
+      cell.element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      expect(openMock).not.toHaveBeenCalled()
+    },
+  )
 })
