@@ -8,7 +8,7 @@ import {
 } from '@/utils/galleryImages'
 
 const sources = {
-  'Super Train 2024': {
+  'Supertrain 2024': {
     'CS5_1317-CR3_DxO_DeepPRIME.jpg': '/st24-a.jpg',
     'CS5_1328-CR3_DxO_DeepPRIME.jpg': '/st24-b.jpg',
   },
@@ -16,8 +16,8 @@ const sources = {
 
 describe('splitGalleryPath', () => {
   it('GIVEN a glob path WHEN splitting THEN it returns the gallery folder and file name', () => {
-    expect(splitGalleryPath('../assets/images/galleries/Super Train 2024/CS5_1317.jpg')).toEqual({
-      folder: 'Super Train 2024',
+    expect(splitGalleryPath('../assets/images/galleries/Supertrain 2024/CS5_1317.jpg')).toEqual({
+      folder: 'Supertrain 2024',
       fileName: 'CS5_1317.jpg',
     })
   })
@@ -33,8 +33,8 @@ describe('splitGalleryPath', () => {
 describe('buildGalleryGroups', () => {
   it('GIVEN curated metadata WHEN building THEN it uses the curated title, description, alt and caption', () => {
     const metadata: GalleryMetadata = {
-      'Super Train 2024': {
-        title: 'Supertrain 2024',
+      'Supertrain 2024': {
+        title: 'Supertrain 2024 Showcase',
         description: 'Our booth at the annual show.',
         images: {
           'CS5_1317-CR3_DxO_DeepPRIME.jpg': {
@@ -47,7 +47,7 @@ describe('buildGalleryGroups', () => {
 
     const [group] = buildGalleryGroups(sources, metadata)
 
-    expect(group.title).toBe('Supertrain 2024')
+    expect(group.title).toBe('Supertrain 2024 Showcase')
     expect(group.description).toBe('Our booth at the annual show.')
     expect(group.images[0]).toEqual({
       src: '/st24-a.jpg',
@@ -60,15 +60,15 @@ describe('buildGalleryGroups', () => {
     const [group] = buildGalleryGroups(sources)
 
     expect(group.images.map((image) => image.alt)).toEqual([
-      'Photo from the Super Train 2024 gallery',
-      'Photo from the Super Train 2024 gallery',
+      'Photo from the Supertrain 2024 gallery',
+      'Photo from the Supertrain 2024 gallery',
     ])
     expect(group.images.every((image) => !image.alt.includes('CS5'))).toBe(true)
   })
 
   it('GIVEN an empty alt but a caption WHEN building THEN the caption is reused as alt text', () => {
     const [group] = buildGalleryGroups(sources, {
-      'Super Train 2024': {
+      'Supertrain 2024': {
         images: {
           'CS5_1317-CR3_DxO_DeepPRIME.jpg': { alt: '   ', caption: 'A live steam 4-6-2 at speed.' },
         },
@@ -80,7 +80,7 @@ describe('buildGalleryGroups', () => {
 
   it('GIVEN missing captions WHEN building THEN the caption is empty so the view can hide it', () => {
     const [group] = buildGalleryGroups(sources, {
-      'Super Train 2024': { images: { 'CS5_1317-CR3_DxO_DeepPRIME.jpg': { alt: 'Curated alt' } } },
+      'Supertrain 2024': { images: { 'CS5_1317-CR3_DxO_DeepPRIME.jpg': { alt: 'Curated alt' } } },
     })
 
     expect(group.images.map((image) => image.caption)).toEqual(['', ''])
@@ -88,23 +88,23 @@ describe('buildGalleryGroups', () => {
 
   it('GIVEN blank metadata strings WHEN building THEN it falls back instead of rendering whitespace', () => {
     const [group] = buildGalleryGroups(sources, {
-      'Super Train 2024': { title: '  ', description: '  ' },
+      'Supertrain 2024': { title: '  ', description: '  ' },
     })
 
-    expect(group.title).toBe('Super Train 2024')
+    expect(group.title).toBe('Supertrain 2024')
     expect(group.description).toBe('')
   })
 
   it('GIVEN metadata listing images WHEN building THEN curated order wins and unlisted files follow alphabetically', () => {
     const [group] = buildGalleryGroups(
       {
-        'Super Train 2024': {
+        'Supertrain 2024': {
           'b.jpg': '/b.jpg',
           'a.jpg': '/a.jpg',
           'zz.jpg': '/zz.jpg',
         },
       },
-      { 'Super Train 2024': { images: { 'zz.jpg': {}, 'b.jpg': {} } } },
+      { 'Supertrain 2024': { images: { 'zz.jpg': {}, 'b.jpg': {} } } },
     )
 
     expect(group.images.map((image) => image.src)).toEqual(['/zz.jpg', '/b.jpg', '/a.jpg'])
@@ -114,13 +114,48 @@ describe('buildGalleryGroups', () => {
     expect(buildGalleryGroups({ 'Supertrain 2026': {} })).toEqual([])
   })
 
-  it('GIVEN several folders WHEN building THEN groups are sorted by title', () => {
-    const groups = buildGalleryGroups({
-      'Super Train 2025': { 'a.jpg': '/a.jpg' },
-      'Super Train 2024': { 'b.jpg': '/b.jpg' },
-    })
+  it('GIVEN galleries with an order number WHEN building THEN the highest number comes first', () => {
+    const groups = buildGalleryGroups(
+      {
+        'Supertrain 2024': { 'b.jpg': '/b.jpg' },
+        'Supertrain 2025': { 'a.jpg': '/a.jpg' },
+        'Zoo Lights': { 'c.jpg': '/c.jpg' },
+      },
+      {
+        'Supertrain 2024': { order: 1 },
+        'Supertrain 2025': { order: 2 },
+        'Zoo Lights': { order: 3 },
+      },
+    )
 
-    expect(groups.map((group) => group.title)).toEqual(['Super Train 2024', 'Super Train 2025'])
+    expect(groups.map((group) => group.title)).toEqual([
+      'Zoo Lights',
+      'Supertrain 2025',
+      'Supertrain 2024',
+    ])
+  })
+
+  it('GIVEN equal, missing or invalid order numbers WHEN building THEN ties are alphabetical and unnumbered galleries go last', () => {
+    const groups = buildGalleryGroups(
+      {
+        'Open House': { 'a.jpg': '/a.jpg' },
+        'Field Trip': { 'b.jpg': '/b.jpg' },
+        'Club Layouts': { 'c.jpg': '/c.jpg' },
+        Archive: { 'd.jpg': '/d.jpg' },
+      },
+      {
+        'Open House': { order: 1 },
+        'Field Trip': { order: 1 },
+        Archive: { order: '5' as unknown as number },
+      },
+    )
+
+    expect(groups.map((group) => group.title)).toEqual([
+      'Field Trip',
+      'Open House',
+      'Archive',
+      'Club Layouts',
+    ])
   })
 })
 
