@@ -12,6 +12,7 @@ describe('UpcomingEvents', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.unstubAllGlobals()
   })
 
   it('GIVEN calendar feed data exists WHEN the page renders THEN the list matches the feed items', async () => {
@@ -309,5 +310,32 @@ END:VCALENDAR`,
     await nextTick()
 
     expect(wrapper.text()).not.toContain('Same Day Evening Event')
+  })
+
+  it('GIVEN a linked event WHEN the board renders THEN only a link icon is shown with no status text', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Board Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+DESCRIPTION:More info at https://example.com/details
+LOCATION:Online
+END:VEVENT
+END:VCALENDAR`,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = mount(UpcomingEvents)
+    await Promise.resolve()
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+
+    expect(wrapper.find('.ticker-board').exists()).toBe(true)
+    expect(wrapper.find('a.event-card--clickable .board-link-icon').exists()).toBe(true)
+    expect(wrapper.text()).not.toMatch(/on time|departed|now boarding/i)
   })
 })
