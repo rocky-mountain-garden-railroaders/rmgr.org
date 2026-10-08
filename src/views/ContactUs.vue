@@ -268,7 +268,11 @@ const handleSubmit = async () => {
     }
 
     showSnackbar.value = true
-    form.value?.reset()
+    formData.name = ''
+    formData.email = ''
+    formData.subject = null
+    formData.message = ''
+    form.value?.resetValidation()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Unable to send your message.'
   } finally {
