@@ -54,7 +54,51 @@ describe.each([
     expect(wrapper.text()).toContain('No upcoming events scheduled right now.')
   })
 
-  it('allows text selection without opening event links', () => {
+  it.each([true, false])(
+    'opens Maps independently of an event link (linked: %s)',
+    async (linked) => {
+      const openMock = vi.fn()
+      vi.stubGlobal('open', openMock)
+      const wrapper = mount(component, {
+        props: {
+          events: [{ ...event, url: linked ? event.url : undefined }],
+          showPastEvents: false,
+          now,
+        },
+      })
+      const rowClick = vi.fn()
+      wrapper.find('.event-card').element.addEventListener('click', rowClick)
+      const location = wrapper.find('[role="link"]')
+      expect(location.attributes('tabindex')).toBe('0')
+      expect(location.attributes('aria-label')).toBe(`Open ${event.location} in Google Maps`)
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+      location.element.dispatchEvent(click)
+      await location.trigger('keydown', { key: 'Enter' })
+      expect(click.defaultPrevented).toBe(true)
+      expect(rowClick).not.toHaveBeenCalled()
+      expect(openMock).toHaveBeenCalledTimes(2)
+      expect(openMock).toHaveBeenCalledWith(
+        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`,
+        '_blank',
+        'noopener,noreferrer',
+      )
+    },
+  )
+
+  it.each(['', 'Online', 'TBD', 'Zoom', 'https://example.com/meeting'])(
+    'does not offer Maps for location "%s"',
+    (location) => {
+      const wrapper = mount(component, {
+        props: { events: [{ ...event, location }], showPastEvents: false, now },
+      })
+      expect(wrapper.find('[role="link"]').exists()).toBe(false)
+      if (location) expect(wrapper.text()).toContain(location)
+    },
+  )
+
+  it('allows text selection without opening event or Maps links', () => {
+    const openMock = vi.fn()
+    vi.stubGlobal('open', openMock)
     const wrapper = mount(component, {
       props: { events: [event], showPastEvents: false, now },
       attachTo: document.body,
@@ -70,6 +114,10 @@ describe.each([
       wrapper.find('a.event-card').element.dispatchEvent(click)
       expect(click.defaultPrevented).toBe(true)
       expect(containsNode).toHaveBeenCalledWith(wrapper.find('a.event-card').element, true)
+      wrapper
+        .find('[role="link"]')
+        .element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      expect(openMock).not.toHaveBeenCalled()
     } finally {
       selection.removeAllRanges()
     }
