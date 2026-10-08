@@ -131,6 +131,8 @@ const tickerMessage = computed(() => {
   </v-col>
 </template>
 
+<style scoped src="@/styles/event-views.css"></style>
+
 <style scoped>
 .ticker-board {
   --board-charcoal: var(--v-theme-on-surface);
@@ -293,11 +295,6 @@ const tickerMessage = computed(() => {
   color: var(--board-amber);
 }
 
-.ticker-board .event-card--clickable {
-  cursor: pointer;
-  user-select: text;
-}
-
 .ticker-board .event-card--clickable:hover {
   background-color: rgba(var(--v-theme-secondary), 0.12) !important;
 }
@@ -355,16 +352,6 @@ const tickerMessage = computed(() => {
   display: none;
   padding-inline: 1.25rem;
   white-space: normal;
-}
-
-.events-fade-enter-active,
-.events-fade-leave-active {
-  transition: opacity 0.18s ease;
-}
-
-.events-fade-enter-from,
-.events-fade-leave-to {
-  opacity: 0;
 }
 
 @keyframes ticker-scroll {
