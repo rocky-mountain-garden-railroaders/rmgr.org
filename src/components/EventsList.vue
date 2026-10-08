@@ -97,6 +97,8 @@ const pageTitle = computed(() => (props.showPastEvents ? 'Past Events' : 'Upcomi
   </v-col>
 </template>
 
+<style scoped src="@/styles/event-views.css"></style>
+
 <style scoped>
 .events-list .event-card {
   color: inherit;
@@ -106,11 +108,6 @@ const pageTitle = computed(() => (props.showPastEvents ? 'Past Events' : 'Upcomi
     transform 0.18s ease,
     box-shadow 0.18s ease,
     background-color 0.18s ease;
-}
-
-.events-list .event-card--clickable {
-  cursor: pointer;
-  user-select: text;
 }
 
 .events-list .event-card--clickable:hover {
@@ -150,16 +147,6 @@ const pageTitle = computed(() => (props.showPastEvents ? 'Past Events' : 'Upcomi
 
 .events-list .event-title-icon--inline {
   display: none;
-}
-
-.events-fade-enter-active,
-.events-fade-leave-active {
-  transition: opacity 0.18s ease;
-}
-
-.events-fade-enter-from,
-.events-fade-leave-to {
-  opacity: 0;
 }
 
 @media (max-width: 959.98px) {
