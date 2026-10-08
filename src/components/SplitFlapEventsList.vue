@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import SplitFlapText from '@/components/SplitFlapText.vue'
 import type { CalendarEvent } from '@/lib/googleCalendar'
-import { ignoreClickAfterSelection } from '@/utils/eventLinks'
+import { ignoreClickAfterSelection, isMappableLocation, openInMaps } from '@/utils/eventLinks'
 
 const props = defineProps<{
   events: CalendarEvent[]
@@ -100,12 +100,31 @@ const tickerMessage = computed(() => {
                   {{ event.description }}
                 </p>
               </div>
-              <SplitFlapText
-                :delay="rowDelay(index) + 200"
-                :text="event.location"
-                class="board-cell board-location"
-                tiles
-              />
+              <span
+                v-if="isMappableLocation(event.location)"
+                :aria-label="`Open ${event.location} in Google Maps`"
+                class="board-cell board-location-cell event-location-link"
+                role="link"
+                tabindex="0"
+                @click="openInMaps($event, event.location)"
+                @keydown.enter="openInMaps($event, event.location)"
+              >
+                <SplitFlapText
+                  :delay="rowDelay(index) + 200"
+                  :text="event.location"
+                  class="board-location"
+                  tiles
+                />
+              </span>
+              <span v-else class="board-cell board-location-cell">
+                <SplitFlapText
+                  v-if="event.location"
+                  :delay="rowDelay(index) + 200"
+                  :text="event.location"
+                  class="board-location"
+                  tiles
+                />
+              </span>
               <div class="board-cell board-link-col event-action-col">
                 <v-icon
                   v-if="event.url"
@@ -245,6 +264,14 @@ const tickerMessage = computed(() => {
   letter-spacing: 0.06em;
 }
 
+.board-location-cell {
+  position: relative;
+  justify-self: start;
+  margin: -0.3rem -0.4rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 4px;
+}
+
 .board-departs {
   display: flex;
   flex-direction: column;
@@ -382,7 +409,7 @@ const tickerMessage = computed(() => {
     grid-area: event;
   }
 
-  .board-location {
+  .board-location-cell {
     grid-area: location;
   }
 

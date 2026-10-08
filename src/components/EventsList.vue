@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import type { CalendarEvent } from '@/lib/googleCalendar'
-import { ignoreClickAfterSelection } from '@/utils/eventLinks'
+import { ignoreClickAfterSelection, isMappableLocation, openInMaps } from '@/utils/eventLinks'
 
 const props = defineProps<{
   events: CalendarEvent[]
@@ -65,7 +65,17 @@ const pageTitle = computed(() => (props.showPastEvents ? 'Past Events' : 'Upcomi
                     ></v-icon>
                   </div>
                   <div class="event-location text-body-1 opacity-80 font-weight-light">
-                    {{ event.location }}
+                    <span
+                      v-if="isMappableLocation(event.location)"
+                      :aria-label="`Open ${event.location} in Google Maps`"
+                      class="event-location-link"
+                      role="link"
+                      tabindex="0"
+                      @click="openInMaps($event, event.location)"
+                      @keydown.enter="openInMaps($event, event.location)"
+                      >{{ event.location }}</span
+                    >
+                    <span v-else>{{ event.location }}</span>
                   </div>
                   <p
                     v-if="event.description"
