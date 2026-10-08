@@ -19,10 +19,6 @@
           <v-row>
             <v-col v-for="section in resourcesSections" :key="section.title" cols="12" md="4">
               <div class="text-h5 font-weight-bold mb-3">{{ section.title }}</div>
-              <div v-if="section.description" class="text-body-2 opacity-80 mb-4">
-                {{ section.description }}
-              </div>
-
               <v-card
                 v-for="item in section.items"
                 :key="item.title"
