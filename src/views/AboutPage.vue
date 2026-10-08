@@ -116,23 +116,23 @@
               <div class="text-body-1 text-secondary font-weight-bold mb-3">
                 Just $40 per family annually
               </div>
-              <p class="mb-3 opacity-90">Dues include full access to:</p>
+              <p class="mb-3 opacity-90">Membership Includes:</p>
 
               <p class="text-body-1 font-weight-light opacity-90">
-                Membership includes access to our video library, expert guidance from experienced
+                Access to our video library, expert guidance from experienced
                 members, club events, tours and layout visits, and invitations to work parties
                 on layouts.
               </p>
             </v-col>
 
             <v-col cols="12" md="6">
-              <div class="text-h5 font-weight-bold mb-4">Objective</div>
+              <div class="text-h5 font-weight-bold mb-4">Objectives</div>
 
               <p class="text-body-1 font-weight-light opacity-90">
                 We promote the hobby of Large Scale Model Railroading, encourage and assist new
                 members entering the hobby, have fun and enjoy good fellowship through modelling
                 and events, support each other with technical and physical assistance, and
-                serve the public by operating layouts at train shows, and other non-profit events.
+                serve the public by operating layouts at train shows and other non-profit events.
               </p>
             </v-col>
           </v-row>
@@ -141,7 +141,7 @@
 
           <v-row align="center" class="pt-2">
             <v-col class="mb-4 mb-sm-0" cols="12" sm="8">
-              <div class="text-h5 font-weight-bold mb-1">Interested In Joining?</div>
+              <div class="text-h5 font-weight-bold mb-1">Interested in Joining?</div>
               <div class="text-body-1 font-weight-light opacity-80">
                 Whether you're a lifelong train fan or have a newfound interest in G-Scale trains,
                 the RMGR welcomes all.
