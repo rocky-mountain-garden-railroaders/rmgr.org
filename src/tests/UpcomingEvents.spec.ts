@@ -1,19 +1,165 @@
-import { mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import UpcomingEvents from '../views/UpcomingEvents.vue'
+
+enableAutoUnmount(afterEach)
 
 describe('UpcomingEvents', () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+    vi.stubGlobal('innerWidth', 1280)
   })
 
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
   })
+
+  it.each([390, 959, 960, 1280])(
+    'GIVEN a %spx viewport WHEN the page opens THEN the appropriate view is selected and can be toggled',
+    async (width) => {
+      vi.stubGlobal('innerWidth', width)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          text: async () => 'BEGIN:VCALENDAR\nEND:VCALENDAR',
+        }),
+      )
+      const wrapper = mount(UpcomingEvents)
+      await flushPromises()
+      const boardByDefault = width >= 960
+      const toggle = wrapper.find('.view-toggle-btn')
+
+      expect(wrapper.find('.ticker-board').exists()).toBe(boardByDefault)
+      expect(wrapper.find('.events-list').exists()).toBe(!boardByDefault)
+      expect(toggle.attributes('aria-pressed')).toBe(String(boardByDefault))
+      expect(toggle.text()).toContain(boardByDefault ? 'Simple view' : 'Ticket Board View')
+      expect(wrapper.text()).toContain('No upcoming events scheduled right now.')
+      const controls = wrapper.findAll('.event-control')
+      expect(controls).toHaveLength(3)
+      expect(controls[0].classes()).toContain('view-toggle-btn')
+      expect(controls[1].attributes('href')).toBe('/calendar-ics')
+      expect(controls[2].classes()).toContain('past-toggle-btn')
+
+      await toggle.trigger('click')
+      expect(wrapper.find('.ticker-board').exists()).toBe(!boardByDefault)
+      expect(wrapper.find('.events-list').exists()).toBe(boardByDefault)
+      expect(toggle.attributes('aria-pressed')).toBe(String(!boardByDefault))
+
+      await toggle.trigger('click')
+      expect(wrapper.find('.ticker-board').exists()).toBe(boardByDefault)
+    },
+  )
+
+  it('GIVEN past events are selected WHEN switching views THEN the selection and event details are preserved without refetching', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Old Event
+DTSTART;TZID=America/Edmonton:20250101T191500
+DTEND;TZID=America/Edmonton:20250101T204500
+LOCATION:2715 Dovely Park SE, Calgary
+DESCRIPTION:More info at https://example.com/details
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Future Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+LOCATION:Online
+END:VEVENT
+END:VCALENDAR`,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = mount(UpcomingEvents)
+    await flushPromises()
+    await wrapper.find('.past-toggle-btn').trigger('click')
+    await wrapper.find('.view-toggle-btn').trigger('click')
+
+    expect(wrapper.find('.events-list').exists()).toBe(true)
+    expect(wrapper.find('h3').text()).toBe('Old Event')
+    expect(wrapper.text()).not.toContain('Future Event')
+    expect(wrapper.find('.event-date').text()).toBe('January 01, 2025')
+    expect(wrapper.find('.event-time').text()).toBe('7:15 PM - 8:45 PM')
+    expect(wrapper.find('.event-location').text()).toBe('2715 Dovely Park SE, Calgary')
+    expect(wrapper.find('.body-copy').text()).toContain('More info at')
+    expect(wrapper.find('a.event-card').attributes('href')).toBe('https://example.com/details')
+
+    await wrapper.find('.view-toggle-btn').trigger('click')
+    expect(wrapper.find('.ticker-board').exists()).toBe(true)
+    expect(wrapper.find('h3').text()).toBe('Old Event')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([390, 1280])(
+    'GIVEN an address at %spx WHEN activated THEN Maps opens without following the event link',
+    async (width) => {
+      vi.stubGlobal('innerWidth', width)
+      const openMock = vi.fn()
+      vi.stubGlobal('open', openMock)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Linked Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+DESCRIPTION:More info at https://example.com/details
+LOCATION:2715 Dovely Park SE, Calgary
+END:VEVENT
+END:VCALENDAR`,
+        }),
+      )
+      const wrapper = mount(UpcomingEvents)
+      await flushPromises()
+      const address = wrapper.find('a.event-card--clickable [role="link"]')
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+      address.element.dispatchEvent(click)
+      expect(click.defaultPrevented).toBe(true)
+      expect(openMock).toHaveBeenCalledWith(
+        'https://www.google.com/maps/search/?api=1&query=2715%20Dovely%20Park%20SE%2C%20Calgary',
+        '_blank',
+        'noopener,noreferrer',
+      )
+      await address.trigger('keydown', { key: 'Enter' })
+      expect(openMock).toHaveBeenCalledTimes(2)
+    },
+  )
+
+  it.each([
+    ['Online', 390],
+    ['TBD', 390],
+    ['Online', 1280],
+    ['TBD', 1280],
+  ] as const)(
+    'GIVEN a %s location at %spx WHEN rendered THEN no Maps action is offered',
+    async (location, width) => {
+      vi.stubGlobal('innerWidth', width)
+      const openMock = vi.fn()
+      vi.stubGlobal('open', openMock)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Placeholder Location Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`,
+        }),
+      )
+      const wrapper = mount(UpcomingEvents)
+      await flushPromises()
+      const cell = wrapper.find(width < 960 ? '.event-location span' : '.board-location-cell')
+      expect(cell.text()).toContain(location)
+      expect(cell.attributes('role')).toBeUndefined()
+      expect(cell.attributes('tabindex')).toBeUndefined()
+      cell.element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      expect(openMock).not.toHaveBeenCalled()
+    },
+  )
 
   it('GIVEN calendar feed data exists WHEN the page renders THEN the list matches the feed items', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
