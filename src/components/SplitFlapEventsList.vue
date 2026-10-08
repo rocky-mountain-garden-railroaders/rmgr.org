@@ -47,7 +47,7 @@ const tickerMessage = computed(() => {
       </header>
 
       <div class="board-columns" aria-hidden="true">
-        <span>Departs</span>
+        <span>{{ showPastEvents ? 'Arrived' : 'Departs' }}</span>
         <span>Event</span>
         <span>Location</span>
         <span></span>
