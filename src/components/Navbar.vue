@@ -2,7 +2,9 @@
   <header>
     <v-app-bar v-if="mobile" class="nav-bar" flat>
       <v-btn icon="mdi-menu" variant="text" @click="drawer = !drawer" />
-      <img :src="logo" alt="RMGR logo" class="nav-logo" height="44" width="44" />
+      <RouterLink class="nav-logo-link" to="/" aria-label="Home / About Us" @click="drawer = false">
+        <img :src="logo" alt="RMGR logo" class="nav-logo" height="44" width="44" />
+      </RouterLink>
     </v-app-bar>
 
     <v-navigation-drawer
@@ -13,7 +15,14 @@
       class="nav-drawer"
     >
       <div class="nav-logo-wrap">
-        <img :src="logo" alt="RMGR logo" class="nav-logo" height="125" width="125" />
+        <RouterLink
+          class="nav-logo-link"
+          to="/"
+          aria-label="Home / About Us"
+          @click="drawer = false"
+        >
+          <img :src="logo" alt="RMGR logo" class="nav-logo" height="125" width="125" />
+        </RouterLink>
       </div>
       <v-list-item
         v-for="item in navItems"
@@ -33,6 +42,7 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import logo from '@/assets/logo.png'
 import { navItems } from '@/navItems'
@@ -65,6 +75,15 @@ header {
 
 .nav-logo {
   object-fit: contain;
+}
+
+.nav-logo-link {
+  display: inline-flex;
+  padding: 0;
+}
+
+.nav-logo-link:hover {
+  background-color: transparent;
 }
 
 .v-list-item {
