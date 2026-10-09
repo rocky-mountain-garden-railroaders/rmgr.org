@@ -14,11 +14,6 @@ export const resourcesSections: ResourceSection[] = [
     title: 'Attractions/Events',
     items: [
       {
-        title: 'Zoo Lights',
-        description: 'An annual holiday light festival hosted by the Calgary Zoo in Calgary, Alberta. The RMGR is builds a layout in the conservatory.',
-        href: 'https://www.calgaryzoo.com/zoo-lights',
-      },
-      {
         title: 'Supertrain Calgary',
         description: 'The largest model train show in Canada, located in Calgary.',
         href: 'https://supertrain.ca',
