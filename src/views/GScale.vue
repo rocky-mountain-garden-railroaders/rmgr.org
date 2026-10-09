@@ -1,5 +1,6 @@
 ﻿<script lang="ts" setup>
 import historyImage from '@/assets/images/featured/20260624_135226.jpg'
+import ExpandableImage from '@/components/ExpandableImage.vue'
 
 defineOptions({ name: 'GScaleInfo' })
 </script>
@@ -46,11 +47,13 @@ defineOptions({ name: 'GScaleInfo' })
 
               <v-col cols="12" md="6">
                 <div class="content-image-frame elevation-4">
-                  <img
-                    :src="historyImage"
-                    alt="G-Scale garden railway layout"
-                    class="content-image"
-                  />
+                  <ExpandableImage :src="historyImage" alt="G-Scale garden railway layout">
+                    <img
+                      :src="historyImage"
+                      alt="G-Scale garden railway layout"
+                      class="content-image"
+                    />
+                  </ExpandableImage>
                 </div>
               </v-col>
             </v-row>
