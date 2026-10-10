@@ -186,7 +186,10 @@ onBeforeUnmount(() => {
           <span
             v-for="cell in word.chars"
             :key="cell.index"
-            :class="{ 'split-flap-cell--turning': running && !settled[cell.index] }"
+            :class="{
+              'split-flap-cell--turning': running && !settled[cell.index],
+              'split-flap-cell--settled': settled[cell.index],
+            }"
             :data-char="cell.char"
             :data-index="cell.index"
             class="split-flap-cell"
@@ -231,6 +234,7 @@ onBeforeUnmount(() => {
 
 .split-flap-cell {
   position: relative;
+  isolation: isolate;
   display: inline-block;
   min-width: 1ch;
   text-align: center;
@@ -242,13 +246,7 @@ onBeforeUnmount(() => {
   padding: 0.1em 0.1em;
   line-height: 1.15;
   letter-spacing: 0;
-  background: linear-gradient(
-    180deg,
-    var(--flap-highlight),
-    var(--flap-face) 50%,
-    var(--flap-highlight) 50%,
-    var(--flap-face)
-  );
+  background: var(--flap-face);
   border-radius: 2px;
   box-shadow: inset 0 0 0 1px var(--flap-shadow);
 }
@@ -259,12 +257,36 @@ onBeforeUnmount(() => {
   background: rgba(var(--v-theme-secondary, 183, 140, 41), 0.45);
 }
 
+.split-flap--tiles .split-flap-cell::before,
 .split-flap--tiles .split-flap-cell::after {
   position: absolute;
+  content: '';
+  opacity: 1;
+  transition: opacity 240ms ease;
+}
+
+.split-flap--tiles .split-flap-cell::before {
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    var(--flap-highlight),
+    var(--flap-face) 50%,
+    var(--flap-highlight) 50%,
+    var(--flap-face)
+  );
+}
+
+.split-flap--tiles .split-flap-cell::after {
   inset: calc(50% - 0.5px) 0 auto;
   height: 1px;
-  content: '';
   background: var(--flap-shadow);
+}
+
+.split-flap--tiles .split-flap-cell--settled::before,
+.split-flap--tiles .split-flap-cell--settled::after {
+  opacity: 0;
 }
 
 .split-flap-cell--turning {
@@ -288,6 +310,11 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .split-flap--tiles .split-flap-cell::before,
+  .split-flap--tiles .split-flap-cell::after {
+    transition: none;
+  }
+
   .split-flap-cell--turning {
     animation: none;
   }
