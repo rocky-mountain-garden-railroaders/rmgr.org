@@ -1,7 +1,13 @@
 import { mount } from '@vue/test-utils'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import ContactUs from '../views/ContactUs.vue'
+
+const vuetify = createVuetify({ components, directives })
+const mountContactUs = () => mount(ContactUs, { global: { plugins: [vuetify] } })
 
 describe('ContactUs', () => {
   beforeEach(() => {
@@ -15,7 +21,7 @@ describe('ContactUs', () => {
     } as Response)
     const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>
 
-    const wrapper = mount(ContactUs)
+    const wrapper = mountContactUs()
 
     const vm = wrapper.vm as unknown as {
       formData: { name: string; email: string; subject: string | null; message: string }
@@ -65,7 +71,7 @@ describe('ContactUs', () => {
   })
 
   it('GIVEN the form is invalid WHEN submitted THEN it does not show the snackbar', async () => {
-    const wrapper = mount(ContactUs)
+    const wrapper = mountContactUs()
 
     const vm = wrapper.vm as unknown as {
       isFormValid: boolean
@@ -87,7 +93,7 @@ describe('ContactUs', () => {
       json: async () => ({}),
     } as Response)
 
-    const wrapper = mount(ContactUs)
+    const wrapper = mountContactUs()
 
     const vm = wrapper.vm as unknown as {
       formData: { name: string; email: string; subject: string | null; message: string }
