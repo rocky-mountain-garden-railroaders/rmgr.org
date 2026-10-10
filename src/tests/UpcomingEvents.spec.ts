@@ -1,17 +1,95 @@
-import { mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import UpcomingEvents from '../views/UpcomingEvents.vue'
+
+enableAutoUnmount(afterEach)
 
 describe('UpcomingEvents', () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+    vi.stubGlobal('innerWidth', 1280)
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it.each([390, 959, 960, 1280])(
+    'GIVEN a %spx viewport WHEN the page opens THEN the appropriate view is selected and can be toggled',
+    async (width) => {
+      vi.stubGlobal('innerWidth', width)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          text: async () => 'BEGIN:VCALENDAR\nEND:VCALENDAR',
+        }),
+      )
+      const wrapper = mount(UpcomingEvents)
+      await flushPromises()
+      const boardByDefault = width >= 960
+      const toggle = wrapper.find('.view-toggle-btn')
+
+      expect(wrapper.find('.ticker-board').exists()).toBe(boardByDefault)
+      expect(wrapper.find('.events-list').exists()).toBe(!boardByDefault)
+      expect(toggle.attributes('aria-pressed')).toBe(String(boardByDefault))
+      expect(toggle.text()).toContain(boardByDefault ? 'Simple view' : 'Ticket Board View')
+      expect(wrapper.text()).toContain('No upcoming events scheduled right now.')
+      const controls = wrapper.findAll('.event-control')
+      expect(controls).toHaveLength(3)
+      expect(controls[0].classes()).toContain('view-toggle-btn')
+      expect(controls[1].attributes('href')).toBe('/calendar-ics')
+      expect(controls[2].classes()).toContain('past-toggle-btn')
+
+      await toggle.trigger('click')
+      expect(wrapper.find('.ticker-board').exists()).toBe(!boardByDefault)
+      expect(wrapper.find('.events-list').exists()).toBe(boardByDefault)
+      expect(toggle.attributes('aria-pressed')).toBe(String(!boardByDefault))
+
+      await toggle.trigger('click')
+      expect(wrapper.find('.ticker-board').exists()).toBe(boardByDefault)
+    },
+  )
+
+  it('GIVEN past events are selected WHEN switching views THEN the selection and event details are preserved without refetching', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Old Event
+DTSTART;TZID=America/Edmonton:20250101T191500
+DTEND;TZID=America/Edmonton:20250101T204500
+LOCATION:2715 Dovely Park SE, Calgary
+DESCRIPTION:More info at https://example.com/details
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Future Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+LOCATION:Online
+END:VEVENT
+END:VCALENDAR`,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = mount(UpcomingEvents)
+    await flushPromises()
+    await wrapper.find('.past-toggle-btn').trigger('click')
+    await wrapper.find('.view-toggle-btn').trigger('click')
+
+    expect(wrapper.find('.events-list').exists()).toBe(true)
+    expect(wrapper.find('h3').text()).toBe('Old Event')
+    expect(wrapper.text()).not.toContain('Future Event')
+    expect(wrapper.find('.event-date').text()).toBe('January 01, 2025')
+    expect(wrapper.find('.event-time').text()).toBe('7:15 PM - 8:45 PM')
+    expect(wrapper.find('.event-location').text()).toBe('2715 Dovely Park SE, Calgary')
+    expect(wrapper.find('.body-copy').text()).toContain('More info at')
+    expect(wrapper.find('a.event-card').attributes('href')).toBe('https://example.com/details')
+
+    await wrapper.find('.view-toggle-btn').trigger('click')
+    expect(wrapper.find('.ticker-board').exists()).toBe(true)
+    expect(wrapper.find('h3').text()).toBe('Old Event')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('GIVEN calendar feed data exists WHEN the page renders THEN the list matches the feed items', async () => {
@@ -309,5 +387,32 @@ END:VCALENDAR`,
     await nextTick()
 
     expect(wrapper.text()).not.toContain('Same Day Evening Event')
+  })
+
+  it('GIVEN a linked event WHEN the board renders THEN only a link icon is shown with no status text', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => `BEGIN:VCALENDAR
+BEGIN:VEVENT
+SUMMARY:Board Event
+DTSTART;TZID=America/Edmonton:20260917T191500
+DTEND;TZID=America/Edmonton:20260917T204500
+DESCRIPTION:More info at https://example.com/details
+LOCATION:Online
+END:VEVENT
+END:VCALENDAR`,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = mount(UpcomingEvents)
+    await Promise.resolve()
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+
+    expect(wrapper.find('.ticker-board').exists()).toBe(true)
+    expect(wrapper.find('a.event-card--clickable .board-link-icon').exists()).toBe(true)
+    expect(wrapper.text()).not.toMatch(/on time|departed|now boarding/i)
   })
 })
