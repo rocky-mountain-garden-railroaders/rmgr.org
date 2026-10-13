@@ -1,0 +1,14 @@
+.event-card--clickable {
+  cursor: pointer;
+  user-select: text;
+}
+
+.events-fade-enter-active,
+.events-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.events-fade-enter-from,
+.events-fade-leave-to {
+  opacity: 0;
+}
