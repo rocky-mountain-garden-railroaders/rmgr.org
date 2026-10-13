@@ -3,6 +3,22 @@
   user-select: text;
 }
 
+.event-location-link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.event-location-link:hover,
+.event-location-link:focus-visible {
+  background-color: rgba(var(--v-theme-secondary), 0.12);
+}
+
+.event-location-link:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-secondary));
+  outline-offset: 3px;
+}
+
 .events-fade-enter-active,
 .events-fade-leave-active {
   transition: opacity 0.18s ease;
