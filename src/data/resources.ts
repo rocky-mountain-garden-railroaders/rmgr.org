@@ -6,14 +6,12 @@ export type ResourceItem = {
 
 export type ResourceSection = {
   title: string
-  description?: string
   items: ResourceItem[]
 }
 
 export const resourcesSections: ResourceSection[] = [
   {
     title: 'Model Railroad Clubs',
-    description: 'Clubs and hobby groups worth exploring.',
     items: [
       {
         title: 'Calgary Model Railway Society (CMRS)',
@@ -28,8 +26,7 @@ export const resourcesSections: ResourceSection[] = [
     ],
   },
   {
-    title: 'Local Attractions and Events',
-    description: 'Nearby rail-themed destinations and places to visit.',
+    title: 'Attractions/Events',
     items: [
       {
         title: 'Supertrain Calgary',
@@ -50,7 +47,6 @@ export const resourcesSections: ResourceSection[] = [
   },
   {
     title: 'Modeling Tips',
-    description: 'Articles and techniques for better layouts.',
     items: [
       {
         title: 'Garden Railways Magazine',
@@ -66,7 +62,6 @@ export const resourcesSections: ResourceSection[] = [
   },
   {
     title: 'YouTube Channels',
-    description: 'Video creators with useful modeling content.',
     items: [
       {
         title: 'Riks Railway',
@@ -88,7 +83,6 @@ export const resourcesSections: ResourceSection[] = [
   },
   {
     title: 'Social Media Pages',
-    description: 'Pages worth following for updates and inspiration.',
     items: [
       {
         title: 'Garden Railroads Reddit',
@@ -109,7 +103,6 @@ export const resourcesSections: ResourceSection[] = [
   },
   {
     title: 'Stores',
-    description: 'Retailers and suppliers for trains, scenery, and tools.',
     items: [
       {
         title: 'Trains and Such',
@@ -130,7 +123,6 @@ export const resourcesSections: ResourceSection[] = [
   },
   {
     title: 'Painting Tips',
-    description: 'Paint, weathering, and finishing techniques.',
     items: [
       {
         title: 'Märklin of Sweden',

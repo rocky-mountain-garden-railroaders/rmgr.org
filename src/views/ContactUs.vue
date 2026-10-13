@@ -177,40 +177,6 @@
             </v-col>
           </v-row>
 
-          <v-divider class="my-6 opacity-10" color="surface"></v-divider>
-
-          <div
-            class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between pt-2"
-          >
-            <div class="mb-3 mb-sm-0">
-              <div class="text-caption font-weight-bold text-uppercase opacity-60 text-surface">
-                Social Media
-              </div>
-            </div>
-            <div class="d-flex ga-2">
-              <v-btn
-                color="surface"
-                href="#"
-                icon="mdi-facebook"
-                target="_blank"
-                variant="text"
-              ></v-btn>
-              <v-btn
-                color="surface"
-                href="#"
-                icon="mdi-instagram"
-                target="_blank"
-                variant="text"
-              ></v-btn>
-              <v-btn
-                color="surface"
-                href="#"
-                icon="mdi-twitter"
-                target="_blank"
-                variant="text"
-              ></v-btn>
-            </div>
-          </div>
         </v-card>
       </v-col>
     </v-row>
