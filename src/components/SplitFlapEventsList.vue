@@ -107,6 +107,7 @@ const tickerMessage = computed(() => {
                 role="link"
                 tabindex="0"
                 @click="openInMaps($event, event.location)"
+                @auxclick="openInMaps($event, event.location)"
                 @keydown.enter="openInMaps($event, event.location)"
               >
                 <SplitFlapText

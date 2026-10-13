@@ -96,6 +96,43 @@ describe.each([
     },
   )
 
+  it.each([true, false])(
+    'opens Maps on middle-click without following the event link (linked: %s)',
+    (linked) => {
+      const openMock = vi.fn()
+      vi.stubGlobal('open', openMock)
+      const wrapper = mount(component, {
+        props: {
+          events: [{ ...event, url: linked ? event.url : undefined }],
+          showPastEvents: false,
+          now,
+        },
+      })
+      const rowClick = vi.fn()
+      wrapper.find('.event-card').element.addEventListener('auxclick', rowClick)
+      const location = wrapper.find('[role="link"]')
+      const middleClick = new MouseEvent('auxclick', {
+        button: 1,
+        bubbles: true,
+        cancelable: true,
+      })
+      location.element.dispatchEvent(middleClick)
+
+      expect(middleClick.defaultPrevented).toBe(true)
+      expect(rowClick).not.toHaveBeenCalled()
+      expect(openMock).toHaveBeenCalledExactlyOnceWith(
+        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`,
+        '_blank',
+        'noopener,noreferrer',
+      )
+
+      location.element.dispatchEvent(
+        new MouseEvent('auxclick', { button: 2, bubbles: true, cancelable: true }),
+      )
+      expect(openMock).toHaveBeenCalledTimes(1)
+    },
+  )
+
   it('allows text selection without opening event or Maps links', () => {
     const openMock = vi.fn()
     vi.stubGlobal('open', openMock)
