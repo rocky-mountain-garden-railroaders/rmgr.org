@@ -28,11 +28,7 @@
 
               <v-col cols="12" md="6">
                 <div class="content-image-frame elevation-4">
-                  <img
-                    :src="highlightImage"
-                    alt="RMGR garden railway highlight"
-                    class="content-image"
-                  />
+                  <ExpandableImage :src="highlightImage" alt="RMGR garden railway highlight" />
                 </div>
               </v-col>
             </v-row>
@@ -167,6 +163,7 @@
 </template>
 
 <script lang="ts" setup>
+import ExpandableImage from '@/components/ExpandableImage.vue'
 import highlightImage from '@/assets/images/featured/20090620_1024.jpg'
 
 defineOptions({ name: 'AboutUs' })
