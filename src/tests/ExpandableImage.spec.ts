@@ -1,16 +1,23 @@
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createVuetify } from 'vuetify'
+import { VDialog } from 'vuetify/components/VDialog'
 import ExpandableImage from '@/components/ExpandableImage.vue'
 import AboutPage from '@/views/AboutPage.vue'
 import GScale from '@/views/GScale.vue'
 
 enableAutoUnmount(afterEach)
+afterEach(() => vi.unstubAllGlobals())
 
 const stubs = {
   VDialog: {
+    inheritAttrs: false,
     props: { modelValue: Boolean, fullscreen: Boolean },
     emits: ['update:modelValue'],
-    template: `<div v-if="modelValue" role="dialog" @keydown.esc="$emit('update:modelValue', false)"><slot /></div>`,
+    template: `
+      <slot name="activator" :props="{ 'aria-haspopup': 'dialog', onClick: () => $emit('update:modelValue', true) }" />
+      <div v-if="modelValue" v-bind="$attrs" role="dialog" @keydown.esc="$emit('update:modelValue', false)"><slot /></div>
+    `,
   },
   VCard: { template: '<div><slot /></div>' },
   VBtn: { template: '<button><slot /></button>' },
@@ -18,6 +25,35 @@ const stubs = {
 }
 
 describe('ExpandableImage', () => {
+  it.each(['close button', 'Escape'])(
+    'restores focus to the activator after dismissal with %s',
+    async (dismissal) => {
+      vi.stubGlobal('visualViewport', new EventTarget())
+      const wrapper = mount(ExpandableImage, {
+        props: { src: '/photo.jpg', alt: 'Garden railway' },
+        attachTo: document.body,
+        global: {
+          plugins: [createVuetify({ components: { VDialog } })],
+          stubs: { VCard: stubs.VCard, VBtn: stubs.VBtn, VImg: stubs.VImg },
+        },
+      })
+      const trigger = wrapper.find<HTMLButtonElement>('.expandable-image')
+      trigger.element.focus()
+      await trigger.trigger('click')
+      await vi.waitFor(() => {
+        expect(document.querySelector('[aria-label="Close image"]')).not.toBeNull()
+      })
+      const closeButton = document.querySelector<HTMLButtonElement>('[aria-label="Close image"]')!
+      closeButton.focus()
+      if (dismissal === 'close button') closeButton.click()
+      else window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      await vi.waitFor(() => {
+        expect(wrapper.findComponent(VDialog).props('modelValue')).toBe(false)
+        expect(document.activeElement).toBe(trigger.element)
+      })
+    },
+  )
+
   it('opens the full-size image in a full-screen dialog and closes using the close button', async () => {
     const wrapper = mount(ExpandableImage, {
       props: { src: '/photo.jpg', alt: 'Garden railway' },

@@ -10,18 +10,19 @@ const isOpen = ref(false)
 </script>
 
 <template>
-  <button
-    class="expandable-image"
-    type="button"
-    :aria-label="`View ${alt} full screen`"
-    aria-haspopup="dialog"
-    @click="isOpen = true"
-  >
-    <slot>
-      <img :src="src" :alt="alt" class="content-image" />
-    </slot>
-  </button>
   <v-dialog v-model="isOpen" fullscreen :aria-label="alt">
+    <template #activator="{ props: activatorProps }">
+      <button
+        v-bind="activatorProps"
+        class="expandable-image"
+        type="button"
+        :aria-label="`View ${alt} full screen`"
+      >
+        <slot>
+          <img :src="src" :alt="alt" class="content-image" />
+        </slot>
+      </button>
+    </template>
     <v-card class="image-popup" color="black" rounded="0">
       <v-btn
         class="image-popup-close"
