@@ -46,16 +46,20 @@ describe('SplitFlapText', () => {
 
   it('GIVEN motion is allowed WHEN the animation runs THEN the flaps turn and then settle on the text', async () => {
     stubReducedMotion(false)
-    const wrapper = mount(SplitFlapText, { props: { text: 'Zoo Lights', delay: 100 } })
+    const wrapper = mount(SplitFlapText, { props: { text: 'Zoo Lights', delay: 100, tiles: true } })
+    await nextTick()
+    expect(wrapper.classes()).not.toContain('split-flap--settled')
 
     await vi.advanceTimersByTimeAsync(160)
     await nextTick()
     expect(wrapper.findAll('.split-flap-cell--turning').length).toBeGreaterThan(0)
+    expect(wrapper.classes()).not.toContain('split-flap--settled')
 
     await vi.advanceTimersByTimeAsync(3000)
     await nextTick()
     expect(visibleChars(wrapper)).toBe('ZOO LIGHTS')
     expect(wrapper.findAll('.split-flap-cell--turning')).toHaveLength(0)
+    expect(wrapper.classes()).toContain('split-flap--settled')
   })
 
   it('GIVEN reduced motion is preferred WHEN rendered THEN the final text shows immediately without turning', async () => {
@@ -65,19 +69,23 @@ describe('SplitFlapText', () => {
 
     expect(visibleChars(wrapper)).toBe('SUPERTRAIN 2027')
     expect(wrapper.findAll('.split-flap-cell--turning')).toHaveLength(0)
+    expect(wrapper.classes()).toContain('split-flap--settled')
   })
 
   it('GIVEN the text changes WHEN the animation finishes THEN the flaps show the new text', async () => {
     stubReducedMotion(false)
     const wrapper = mount(SplitFlapText, { props: { text: 'Old' } })
     await vi.advanceTimersByTimeAsync(3000)
+    expect(wrapper.classes()).toContain('split-flap--settled')
 
     await wrapper.setProps({ text: 'New' })
+    expect(wrapper.classes()).not.toContain('split-flap--settled')
     await vi.advanceTimersByTimeAsync(3000)
     await nextTick()
 
     expect(visibleChars(wrapper)).toBe('NEW')
     expect(wrapper.find('.split-flap-sr').text()).toBe('New')
+    expect(wrapper.classes()).toContain('split-flap--settled')
   })
 
   it('GIVEN part of the flaps are selected WHEN copied THEN the clipboard gets that part in its original case', async () => {

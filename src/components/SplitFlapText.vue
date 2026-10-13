@@ -22,6 +22,7 @@ const target = computed(() => props.text.toUpperCase())
 const shown = ref<string[]>([])
 const settled = ref<boolean[]>([])
 const running = ref(false)
+const isSettled = computed(() => settled.value.every(Boolean))
 
 let flipTimer: ReturnType<typeof setTimeout> | undefined
 let startTimer: ReturnType<typeof setTimeout> | undefined
@@ -178,7 +179,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <span ref="root" :class="{ 'split-flap--tiles': tiles }" class="split-flap" @copy="copyOriginalText">
+  <span
+    ref="root"
+    :class="{ 'split-flap--tiles': tiles, 'split-flap--settled': isSettled }"
+    class="split-flap"
+    @copy="copyOriginalText"
+  >
     <span class="split-flap-sr">{{ text }}</span>
     <span aria-hidden="true" class="split-flap-words">
       <template v-for="word in words" :key="word.index">
@@ -265,6 +271,14 @@ onBeforeUnmount(() => {
   height: 1px;
   content: '';
   background: var(--flap-shadow);
+}
+
+.split-flap--tiles.split-flap--settled .split-flap-cell {
+  background: var(--flap-face);
+}
+
+.split-flap--tiles.split-flap--settled .split-flap-cell::after {
+  content: none;
 }
 
 .split-flap-cell--turning {
