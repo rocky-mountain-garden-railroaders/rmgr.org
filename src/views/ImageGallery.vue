@@ -2,9 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 import GallerySection from '@/components/GallerySection.vue'
 import { galleryGroups } from '@/utils/galleryImages'
+import { useRoute } from 'vue-router'
 
 defineOptions({ name: 'ImageGallery' })
 
+const route = useRoute()
+const isGalleryDebugEnabled = computed(() => route.query.galleryDebug === 'true')
 const activeGroupIndex = ref(0)
 const activeImageIndex = ref(0)
 const isLightboxOpen = ref(false)
@@ -203,6 +206,13 @@ onUnmounted(() => {
           </div>
 
           <v-card-text
+            v-if="isGalleryDebugEnabled"
+            class="gallery-debug-filename bg-surface py-2 px-6 text-left border-t"
+          >
+            Filename: <code>{{ activeImage.fileName }}</code>
+          </v-card-text>
+
+          <v-card-text
             v-if="activeImage.caption"
             class="text-body-1 bg-surface py-4 px-6 text-left text-on-surface border-t"
           >
@@ -217,6 +227,11 @@ onUnmounted(() => {
 <style scoped>
 .border-t {
   border-top: 1px solid rgba(var(--v-theme-primary), 0.1);
+}
+
+.gallery-debug-filename {
+  overflow-wrap: anywhere;
+  user-select: text;
 }
 
 .gallery-table {

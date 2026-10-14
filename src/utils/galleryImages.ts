@@ -2,6 +2,7 @@ import galleryMetadata from '../assets/images/galleries/galleries.json'
 
 export type GalleryImage = {
   src: string
+  fileName: string
   alt: string
   caption: string
 }
@@ -20,7 +21,7 @@ export type GalleryImageMetadata = {
 export type GalleryFolderMetadata = {
   title?: string
   description?: string
-  /** Position in the gallery list: 1 is the oldest gallery, and higher numbers are listed first. */
+  /** Display priority in the gallery list: higher numbers are listed first. */
   order?: number
   images?: Record<string, GalleryImageMetadata>
 }
@@ -89,7 +90,7 @@ export const buildGalleryGroups = (
         const caption = imageMetadata?.caption?.trim() ?? ''
         const alt = imageMetadata?.alt?.trim() || caption || fallbackAlt(folder)
 
-        return { src: sources[fileName], alt, caption }
+        return { src: sources[fileName], fileName, alt, caption }
       })
 
       return {

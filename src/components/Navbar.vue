@@ -34,7 +34,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useDisplay } from 'vuetify'
-import logo from '@/assets/logo.png'
+import logo from '@/assets/logo.webp'
 import { navItems } from '@/navItems'
 
 const drawer = ref(false)

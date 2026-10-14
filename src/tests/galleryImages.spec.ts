@@ -51,6 +51,7 @@ describe('buildGalleryGroups', () => {
     expect(group.description).toBe('Our booth at the annual show.')
     expect(group.images[0]).toEqual({
       src: '/st24-a.jpg',
+      fileName: 'CS5_1317-CR3_DxO_DeepPRIME.jpg',
       alt: 'Club members operating the modular layout',
       caption: 'Volunteers running trains for the crowd.',
     })
@@ -160,6 +161,59 @@ describe('buildGalleryGroups', () => {
 })
 
 describe('galleryGroups', () => {
+  it('GIVEN converted gallery photos WHEN loaded THEN every photo uses WebP', () => {
+    expect(galleryGroups.length).toBeGreaterThan(0)
+
+    for (const group of galleryGroups) {
+      for (const image of group.images) {
+        expect(image.fileName).toMatch(/\.webp$/)
+      }
+    }
+  })
+
+  it('GIVEN curated gallery priorities WHEN loaded THEN recent events precede alphabetical member layouts and older events', () => {
+    expect(galleryGroups.map((group) => group.title)).toEqual([
+      'Supertrain - 2026',
+      'Zoo Lights - 2025',
+      'Supertrain - 2025',
+      'Supertrain - 2024',
+      'Member Layout - Baldwin',
+      'Member Layout - Beck',
+      'Member Layout - Burk Jr.',
+      'Member Layout - Burk Sr.',
+      'Member Layout - Graham',
+      'Member Layout - Huthmann',
+      'Member Layout - Jalving',
+      'Member Layout - Lee',
+      'Member Layout - Mayhew',
+      'Member Layout - McKay',
+      'Member Layout - Morris',
+      'Member Layout - Riegel',
+      'Member Layout - Siwy',
+      'Member Layout - Stoneham',
+      'Member Layout - Toews',
+      'Member Layout - Vaughan',
+      'Member Layout - Vern and Kathleen',
+      'Member Layout - Weins',
+      "Aspen Crossing - Father's Day - 2021",
+      'Supertrain - 2019',
+      'Supertrain - 2018',
+      'Heritage Park - Christmas Display - 2017',
+      'Supertrain - 2017',
+      'Heritage Park - Christmas Display - 2016',
+      'Heritage Park - Christmas Display - 2013',
+      "Aspen Crossing - Father's Day - 2012",
+      'Heritage Park - Christmas Display - 2012',
+      "Aspen Crossing - Father's Day - 2011",
+      "Aspen Crossing - Father's Day - 2010",
+      "Aspen Crossing - Father's Day - 2009",
+      'Supertrain - 2006',
+      'Supertrain - 2005',
+      'Supertrain - 2004',
+      'Supertrain - 2003',
+    ])
+  })
+
   it('GIVEN the real galleries.json WHEN loaded THEN no alt text is a bare camera filename', () => {
     expect(galleryGroups.length).toBeGreaterThan(0)
 
@@ -171,7 +225,7 @@ describe('galleryGroups', () => {
     }
   })
 
-  it('GIVEN the image folders on disk WHEN compared to galleries.json THEN every folder and file has an entry', async () => {
+  it('GIVEN the image folders on disk WHEN compared to galleries.json THEN entries match exactly and exclude videos', async () => {
     const { readdir } = await import('node:fs/promises')
     const { resolve } = await import('node:path')
 
@@ -189,12 +243,30 @@ describe('galleryGroups', () => {
         /\.(jpg|jpeg|png|webp|gif)$/i.test(file),
       )
 
-      for (const file of files) {
-        expect(
-          metadata[folder]?.images?.[file],
-          `galleries.json is missing "${folder}/${file}"`,
-        ).toBeDefined()
-      }
+      expect(
+        Object.keys(metadata[folder]?.images ?? {}).sort(),
+        `galleries.json must list exactly the supported images in "${folder}"`,
+      ).toEqual(files.sort())
     }
+  })
+
+  it('GIVEN the Mayhew manifest WHEN building THEN its featured photo stays first and remaining photos are newest to oldest', () => {
+    const folder = 'Member Layout - Mayhew'
+    const files = [
+      '20260624_135146.webp',
+      '20260624_135226.webp',
+      '20260624_135201.webp',
+      '20260618_180715.webp',
+      '20260618_180658.webp',
+      '20250828_201613.webp',
+      '20250828_201559.webp',
+      '20250811_172331.webp',
+    ]
+    const [group] = buildGalleryGroups(
+      { [folder]: Object.fromEntries([...files].reverse().map((file) => [file, file])) },
+      galleryMetadata.galleries,
+    )
+
+    expect(group.images.map((image) => image.src)).toEqual(files)
   })
 })

@@ -1,6 +1,7 @@
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 const { galleryGroups } = vi.hoisted(() => ({
   galleryGroups: Array.from({ length: 5 }, (_, index) => ({
@@ -9,12 +10,14 @@ const { galleryGroups } = vi.hoisted(() => ({
     images: [
       {
         src: `/gallery-${index + 1}-a.jpg`,
+        fileName: `original-${index + 1}-a.jpg`,
         alt: `Gallery ${index + 1} image A alt`,
         // Only the first gallery has curated captions, so the view must hide the rest.
         caption: index === 0 ? `Gallery ${index + 1} image A caption` : '',
       },
       {
         src: `/gallery-${index + 1}-b.jpg`,
+        fileName: `original-${index + 1}-b.jpg`,
         alt: `Gallery ${index + 1} image B alt`,
         caption: '',
       },
@@ -56,10 +59,25 @@ const createMatchMedia = (isMobile: boolean, prefersReducedMotion: boolean) =>
     removeEventListener: vi.fn(),
   }))
 
-const mountGallery = async (isMobile: boolean, { prefersReducedMotion = false } = {}) => {
+const mountGallery = async (
+  isMobile: boolean,
+  {
+    prefersReducedMotion = false,
+    galleryDebug,
+  }: { prefersReducedMotion?: boolean; galleryDebug?: string } = {},
+) => {
   vi.stubGlobal('matchMedia', createMatchMedia(isMobile, prefersReducedMotion))
 
-  const wrapper = mount(ImageGallery, { global: { stubs } })
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/gallery', component: ImageGallery }],
+  })
+  await router.push({
+    path: '/gallery',
+    query: galleryDebug === undefined ? {} : { galleryDebug },
+  })
+  await router.isReady()
+  const wrapper = mount(ImageGallery, { global: { stubs, plugins: [router] } })
   await nextTick()
 
   return wrapper
@@ -142,7 +160,9 @@ describe('ImageGallery', () => {
       const wrapper = await openFirstGallery()
 
       await wrapper.find('.modal-slideshow-toggle').trigger('click')
-      expect(wrapper.find('.modal-slideshow-toggle').attributes('aria-label')).toBe('Play slideshow')
+      expect(wrapper.find('.modal-slideshow-toggle').attributes('aria-label')).toBe(
+        'Play slideshow',
+      )
       expect(vi.getTimerCount()).toBe(0)
 
       await advance(SLIDESHOW_DELAY_MS * 3)
@@ -165,7 +185,9 @@ describe('ImageGallery', () => {
     it('GIVEN the user prefers reduced motion WHEN the lightbox opens THEN the slideshow starts paused', async () => {
       const wrapper = await openFirstGallery({ prefersReducedMotion: true })
 
-      expect(wrapper.find('.modal-slideshow-toggle').attributes('aria-label')).toBe('Play slideshow')
+      expect(wrapper.find('.modal-slideshow-toggle').attributes('aria-label')).toBe(
+        'Play slideshow',
+      )
       await advance(SLIDESHOW_DELAY_MS * 3)
       expect(currentSrc(wrapper)).toBe(group.images[0].src)
     })
@@ -234,6 +256,37 @@ describe('ImageGallery', () => {
 
     expect(wrapper.find('.modal-image-shell').exists()).toBe(true)
     expect(wrapper.find('.border-t').exists()).toBe(false)
+  })
+
+  it.each([undefined, 'false', '1'])(
+    'GIVEN galleryDebug=%s WHEN opening the slideshow THEN filenames remain hidden',
+    async (galleryDebug) => {
+      const wrapper = await mountGallery(false, { galleryDebug })
+      await wrapper.findAll('button.image-hit-area')[0].trigger('click')
+
+      expect(wrapper.find('.gallery-debug-filename').exists()).toBe(false)
+    },
+  )
+
+  it('GIVEN galleryDebug=true WHEN navigating photos THEN the original filename follows the active image even without a caption', async () => {
+    const wrapper = await mountGallery(false, { galleryDebug: 'true' })
+    await wrapper.findAll('button.image-hit-area')[0].trigger('click')
+
+    expect(wrapper.find('.gallery-debug-filename code').text()).toBe('original-1-a.jpg')
+    expect(wrapper.text()).toContain(galleryGroups[0].images[0].caption)
+    await wrapper.find('.modal-nav-right').trigger('click')
+    expect(wrapper.find('.gallery-debug-filename code').text()).toBe('original-1-b.jpg')
+  })
+
+  it('GIVEN debug filenames are displayed WHEN the URL flag is removed THEN filenames disappear', async () => {
+    const wrapper = await mountGallery(false, { galleryDebug: 'true' })
+    await wrapper.findAll('button.image-hit-area')[0].trigger('click')
+    expect(wrapper.find('.gallery-debug-filename').exists()).toBe(true)
+
+    await wrapper.vm.$router.push('/gallery')
+    await nextTick()
+
+    expect(wrapper.find('.gallery-debug-filename').exists()).toBe(false)
   })
 
   it('GIVEN the lightbox is open WHEN inspecting the controls THEN each has an accessible name', async () => {
