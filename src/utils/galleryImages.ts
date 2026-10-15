@@ -113,7 +113,7 @@ export const buildGalleryGroups = (
 const sourcesByFolder = Object.entries(imageModules).reduce<Record<string, Record<string, string>>>(
   (groups, [path, src]) => {
     const { folder, fileName } = splitGalleryPath(path)
-    if (!fileName) return groups
+    if (!fileName || !Object.prototype.hasOwnProperty.call(metadataByFolder, folder)) return groups
 
     groups[folder] ??= {}
     groups[folder][fileName] = src as string

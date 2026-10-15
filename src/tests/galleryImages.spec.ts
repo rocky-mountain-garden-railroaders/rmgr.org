@@ -161,6 +161,18 @@ describe('buildGalleryGroups', () => {
 })
 
 describe('galleryGroups', () => {
+  it('GIVEN a gallery is omitted from the manifest WHEN loaded THEN its photos remain unpublished', async () => {
+    const { readdir } = await import('node:fs/promises')
+    const { resolve } = await import('node:path')
+    const folder = 'Supertrain - 2026'
+
+    expect(galleryMetadata.galleries).not.toHaveProperty(folder)
+    expect(galleryGroups.some((group) => group.title === folder)).toBe(false)
+    expect(
+      await readdir(resolve(process.cwd(), 'src/assets/images/galleries', folder)),
+    ).toEqual(expect.arrayContaining(['5e35d5a4c5c7096179da2d60a671e3e4.webp', 'IMG_5680.webp']))
+  })
+
   it('GIVEN converted gallery photos WHEN loaded THEN every photo uses WebP', () => {
     expect(galleryGroups.length).toBeGreaterThan(0)
 
@@ -173,7 +185,6 @@ describe('galleryGroups', () => {
 
   it('GIVEN curated gallery priorities WHEN loaded THEN recent events precede alphabetical member layouts and older events', () => {
     expect(galleryGroups.map((group) => group.title)).toEqual([
-      'Supertrain - 2026',
       'Zoo Lights - 2025',
       'Supertrain - 2025',
       'Supertrain - 2024',
@@ -225,20 +236,14 @@ describe('galleryGroups', () => {
     }
   })
 
-  it('GIVEN the image folders on disk WHEN compared to galleries.json THEN entries match exactly and exclude videos', async () => {
+  it('GIVEN the published galleries WHEN compared to disk THEN entries match exactly and exclude videos', async () => {
     const { readdir } = await import('node:fs/promises')
     const { resolve } = await import('node:path')
 
     const galleriesDir = resolve(process.cwd(), 'src/assets/images/galleries')
     const metadata = galleryMetadata.galleries as GalleryMetadata
 
-    const folders = (await readdir(galleriesDir, { withFileTypes: true }))
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name)
-
-    for (const folder of folders) {
-      expect(metadata[folder], `galleries.json is missing the "${folder}" folder`).toBeDefined()
-
+    for (const folder of Object.keys(metadata)) {
       const files = (await readdir(`${galleriesDir}/${folder}`)).filter((file) =>
         /\.(jpg|jpeg|png|webp|gif)$/i.test(file),
       )

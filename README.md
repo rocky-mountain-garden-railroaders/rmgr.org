@@ -47,6 +47,9 @@ they are hidden by default.
 
 `src/assets/images/galleries/galleries.json` lists the supported photos in each
 gallery subfolder. Keep these entries in sync with the files on disk; omit videos.
+Only folders listed in the manifest are published. Omit a gallery entry to keep
+it unpublished without deleting its photos; Supertrain 2026 is currently omitted
+until more photos are available.
 Site photos use WebP at quality 85 without resizing; the logo uses lossless WebP
 to preserve its pixels and transparency. When converting new photos, preserve
 their displayed orientation, capture-date metadata, and color profile, and update
