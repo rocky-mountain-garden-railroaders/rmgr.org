@@ -35,5 +35,5 @@ For images within each gallery:
 - Do not use filesystem modification dates to infer capture dates.
 
 Validate gallery changes with
-`npm run test:unit -- --run src/tests/galleryImages.spec.ts`. If gallery priorities
+`pnpm run test:unit --run src/tests/galleryImages.spec.ts`. If gallery priorities
 change intentionally, update the expected gallery order in that test.
