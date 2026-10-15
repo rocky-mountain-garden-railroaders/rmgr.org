@@ -164,7 +164,7 @@
 
 <script lang="ts" setup>
 import ExpandableImage from '@/components/ExpandableImage.vue'
-import highlightImage from '@/assets/images/featured/20090620_1024.jpg'
+import highlightImage from '@/assets/images/featured/20090620_1024.webp'
 
 defineOptions({ name: 'AboutUs' })
 </script>

@@ -28,8 +28,12 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+*.mp4
 
 /public/calendar-ics
 
 test-results/
 playwright-report/
+
+# Legacy project kept locally for reference
+/rgmg-old/
