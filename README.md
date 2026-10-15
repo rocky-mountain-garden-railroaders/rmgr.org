@@ -16,26 +16,30 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
+Use Node.js 24 or newer and pnpm 10.18.3, as pinned in `package.json`.
+If pnpm is not installed, substitute `npx pnpm@10.18.3` for `pnpm` in the
+commands below.
+
 ```sh
-npm install
+pnpm install
 ```
 
 ### Compile and Hot-Reload for Development
 
 ```sh
-npm run dev
+pnpm run dev
 ```
 
 ### Type-Check, Compile and Minify for Production
 
 ```sh
-npm run build
+pnpm run build
 ```
 
 ### Run Unit Tests with [Vitest](https://vitest.dev/)
 
 ```sh
-npm run test:unit
+pnpm run test:unit
 ```
 
 ### Gallery image metadata
@@ -71,25 +75,37 @@ newest first. Update these priorities as new galleries are added.
 
 ```sh
 # Install browsers for the first run
-npx playwright install
+pnpm exec playwright install
 
 # When testing on CI, must build the project first
-npm run build
+pnpm run build
 
 # Runs the end-to-end tests
-npm run test:e2e
+pnpm run test:e2e
 # Runs the tests only on Chromium
-npm run test:e2e -- --project=chromium
+pnpm run test:e2e --project=chromium
 # Runs the tests of a specific file
-npm run test:e2e -- tests/example.spec.ts
+pnpm run test:e2e tests/example.spec.ts
 # Runs the tests in debug mode
-npm run test:e2e -- --debug
+pnpm run test:e2e --debug
 ```
+
+### Pull request checks
+
+The GitHub Actions `build` check installs dependencies from the frozen pnpm
+lockfile, type-checks and builds the site. On pull requests only, it also runs all
+Vitest tests and Playwright tests in Chromium, Firefox, and WebKit. Browser tests
+still run if unit tests fail. Playwright reports and traces are retained as
+workflow artifacts for seven days. Pushes (including merges), scheduled runs,
+and manual runs build without rerunning tests; successful builds on `main` deploy.
+
+The `main` ruleset requires the `build` check to pass with the branch up to date
+before merging. Organization administrators currently have a ruleset bypass.
 
 ### Lint with [ESLint](https://eslint.org/)
 
 ```sh
-npm run lint
+pnpm run lint
 ```
 
 Pull requests also run `npm run lint:check` in the GitHub Actions `build` check.
