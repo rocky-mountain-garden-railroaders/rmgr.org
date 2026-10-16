@@ -16,7 +16,9 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
-Use Node.js 24 or newer and pnpm 10.18.3, as pinned in `package.json`.
+Use Node.js `^24.15.0 || >=26.0.0` (24.15.0 or later in the 24.x series, or
+26.0.0 or newer) and pnpm 10.18.3, as pinned in `package.json`. Node.js 25 is not
+supported.
 If pnpm is not installed, substitute `npx pnpm@10.18.3` for `pnpm` in the
 commands below.
 
@@ -27,6 +29,10 @@ pnpm install
 Dependency updates respect the 14-day minimum release age configured in
 `pnpm-workspace.yaml`. Use `pnpm update` for updates within the declared version
 ranges and `pnpm audit` to check for known vulnerabilities.
+
+TypeScript stays on major version 6 because the current Vue type checker and
+TypeScript ESLint tooling do not support TypeScript 7. Node type definitions stay
+on major version 24 to match the runtime used in CI.
 
 ### Compile and Hot-Reload for Development
 
