@@ -30,8 +30,10 @@ const stubs = {
 
 const mockFullscreen = () => {
   let activeElement: Element | null = null
-  const request = vi.fn(async function (this: HTMLElement) {
-    activeElement = this
+  let requestTarget: HTMLElement | null = null
+  const request = vi.fn(async () => {
+    if (!requestTarget) throw new Error('No fullscreen request target was configured')
+    activeElement = requestTarget
     document.dispatchEvent(new Event('fullscreenchange'))
   })
   const exit = vi.fn(async () => {
@@ -52,17 +54,24 @@ const mockFullscreen = () => {
       else Reflect.deleteProperty(target, key)
     })
   }
-  return { request, exit }
+  return {
+    request,
+    exit,
+    setRequestTarget: (target: HTMLElement) => {
+      requestTarget = target
+    },
+  }
 }
 
 describe('ExpandableImage', () => {
   it('enters and exits browser fullscreen while keeping the image controls available', async () => {
-    const { request, exit } = mockFullscreen()
+    const { request, exit, setRequestTarget } = mockFullscreen()
     const wrapper = mount(ExpandableImage, {
       props: { src: '/photo.jpg', alt: 'Garden railway' },
       global: { stubs },
     })
     await wrapper.find('.expandable-image').trigger('click')
+    setRequestTarget(wrapper.find<HTMLElement>('.image-popup-viewer').element)
     await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
     await flushPromises()
     expect(request).toHaveBeenCalledOnce()
@@ -75,12 +84,13 @@ describe('ExpandableImage', () => {
   })
 
   it('updates the fullscreen button after the browser exits fullscreen', async () => {
-    mockFullscreen()
+    const { setRequestTarget } = mockFullscreen()
     const wrapper = mount(ExpandableImage, {
       props: { src: '/photo.jpg', alt: 'Garden railway' },
       global: { stubs },
     })
     await wrapper.find('.expandable-image').trigger('click')
+    setRequestTarget(wrapper.find<HTMLElement>('.image-popup-viewer').element)
     await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
     await flushPromises()
     await document.exitFullscreen()
@@ -90,12 +100,13 @@ describe('ExpandableImage', () => {
   })
 
   it('exits fullscreen when the image is closed', async () => {
-    const { exit } = mockFullscreen()
+    const { exit, setRequestTarget } = mockFullscreen()
     const wrapper = mount(ExpandableImage, {
       props: { src: '/photo.jpg', alt: 'Garden railway' },
       global: { stubs },
     })
     await wrapper.find('.expandable-image').trigger('click')
+    setRequestTarget(wrapper.find<HTMLElement>('.image-popup-viewer').element)
     await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
     await flushPromises()
     await wrapper.find('[aria-label="Close image"]').trigger('click')
