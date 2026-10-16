@@ -16,7 +16,9 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
-Use Node.js 24 or newer and pnpm 10.18.3, as pinned in `package.json`.
+Use Node.js `^24.15.0 || >=26.0.0` (24.15.0 or later in the 24.x series, or
+26.0.0 or newer) and pnpm 10.18.3, as pinned in `package.json`. Node.js 25 is not
+supported.
 If pnpm is not installed, substitute `npx pnpm@10.18.3` for `pnpm` in the
 commands below.
 
