@@ -1,4 +1,4 @@
-import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -106,6 +106,57 @@ describe('ImageGallery', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('keeps gallery navigation available in fullscreen and exits fullscreen on close', async () => {
+    let fullscreenElement: Element | null = null
+    const originalEnabled = Object.getOwnPropertyDescriptor(document, 'fullscreenEnabled')
+    const originalElement = Object.getOwnPropertyDescriptor(document, 'fullscreenElement')
+    const originalRequest = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'requestFullscreen')
+    const originalExit = Object.getOwnPropertyDescriptor(document, 'exitFullscreen')
+    const exit = vi.fn(async () => {
+      fullscreenElement = null
+      document.dispatchEvent(new Event('fullscreenchange'))
+    })
+    Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: true })
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: () => fullscreenElement,
+    })
+    Object.defineProperty(HTMLElement.prototype, 'requestFullscreen', {
+      configurable: true,
+      value: async function (this: HTMLElement) {
+        fullscreenElement = this
+        document.dispatchEvent(new Event('fullscreenchange'))
+      },
+    })
+    Object.defineProperty(document, 'exitFullscreen', { configurable: true, value: exit })
+    try {
+      const wrapper = await mountGallery(false, { prefersReducedMotion: true })
+      await wrapper.find('button.image-hit-area').trigger('click')
+      await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
+      await flushPromises()
+      expect(fullscreenElement).toBe(wrapper.find('.gallery-fullscreen-viewer').element)
+      expect(wrapper.find('[aria-label="Exit fullscreen"]').exists()).toBe(true)
+      await wrapper.find('[aria-label="Next image"]').trigger('click')
+      expect(wrapper.find('.modal-image-shell [src]').attributes('src')).toBe('/gallery-1-b.jpg')
+      expect(wrapper.find('[aria-label="Play slideshow"]').exists()).toBe(true)
+      await wrapper.find('[aria-label="Close image viewer"]').trigger('click')
+      await flushPromises()
+      expect(exit).toHaveBeenCalledOnce()
+      wrapper.unmount()
+    } finally {
+      for (const [target, key, descriptor] of [
+        [document, 'fullscreenEnabled', originalEnabled],
+        [document, 'fullscreenElement', originalElement],
+        [HTMLElement.prototype, 'requestFullscreen', originalRequest],
+        [document, 'exitFullscreen', originalExit],
+      ] as const) {
+        if (descriptor) Object.defineProperty(target, key, descriptor)
+        else Reflect.deleteProperty(target, key)
+      }
+    }
   })
 
   it('GIVEN the lightbox slideshow is running WHEN the gallery unmounts THEN no timers remain', async () => {

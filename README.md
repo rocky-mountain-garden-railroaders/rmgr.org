@@ -52,6 +52,11 @@ pnpm run test:unit
 
 ### Gallery image metadata
 
+Embedded photos open in a full-window image viewer. Where the browser supports
+fullscreen, embedded photo viewers and expanded galleries include a fullscreen
+toggle alongside their other controls. Exiting browser fullscreen returns to the
+image viewer; gallery navigation and slideshow controls remain available.
+
 To identify photos while reorganizing the manifest, open
 `/gallery?galleryDebug=true`. The slideshow displays the original filename below
 each photo, including photos without captions. Remove the flag to hide filenames;
