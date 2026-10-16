@@ -1,4 +1,4 @@
-﻿import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import About from '@/views/AboutPage.vue'
 import GScale from '@/views/GScale.vue'
 import UpcomingEvents from '@/views/UpcomingEvents.vue'

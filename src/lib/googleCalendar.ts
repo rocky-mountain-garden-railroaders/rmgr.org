@@ -99,7 +99,21 @@ const formatTime = (start: string, end?: string) => {
   return `${startTime} - ${endTime}`
 }
 
-export const mapGoogleCalendarFeedToEvents = (items: Array<any>): CalendarEvent[] => {
+type GoogleCalendarDate =
+  | { dateTime: string; date?: never }
+  | { date: string; dateTime?: never }
+
+type GoogleCalendarFeedItem = {
+  summary?: string
+  start: GoogleCalendarDate
+  end?: GoogleCalendarDate
+  location?: string
+  description?: string
+  htmlLink?: string
+  url?: string
+}
+
+export const mapGoogleCalendarFeedToEvents = (items: GoogleCalendarFeedItem[]): CalendarEvent[] => {
   return items.map((item) => {
     const title = item.summary ?? 'Untitled event'
     const isAllDay = !item.start?.dateTime
