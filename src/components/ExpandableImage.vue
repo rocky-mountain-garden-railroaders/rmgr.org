@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useImageFullscreen } from '@/composables/useImageFullscreen'
+import { useImageZoom } from '@/composables/useImageZoom'
 
-defineProps<{
+const props = defineProps<{
   src: string
   alt: string
 }>()
@@ -10,6 +11,10 @@ defineProps<{
 const isOpen = ref(false)
 const { viewer, fullscreenSupported, isFullscreen, fullscreenError, toggleFullscreen } =
   useImageFullscreen(isOpen)
+const { imageStyle, isZoomed, onWheel, updateOrigin } = useImageZoom(
+  computed(() => isOpen.value && isFullscreen.value),
+  () => props.src,
+)
 </script>
 
 <template>
@@ -47,7 +52,20 @@ const { viewer, fullscreenSupported, isFullscreen, fullscreenError, toggleFullsc
           variant="text"
           @click="isOpen = false"
         />
-        <v-img :src="src" :alt="alt" class="image-popup-photo" height="100%" />
+        <div
+          class="image-popup-viewport"
+          :class="{ 'is-zoomed': isZoomed }"
+          @wheel="onWheel"
+          @mousemove="updateOrigin"
+        >
+          <v-img
+            :src="src"
+            :alt="alt"
+            :style="imageStyle"
+            class="image-popup-photo"
+            height="100%"
+          />
+        </div>
         <p v-if="fullscreenError" role="alert" class="image-popup-error">{{ fullscreenError }}</p>
       </div>
     </v-card>
@@ -82,6 +100,19 @@ const { viewer, fullscreenSupported, isFullscreen, fullscreenError, toggleFullsc
 
 .image-popup-photo {
   min-height: 0;
+}
+
+.image-popup-viewport {
+  height: 100%;
+  overflow: hidden;
+}
+
+.image-popup-viewer:fullscreen .image-popup-viewport {
+  cursor: zoom-in;
+}
+
+.image-popup-viewer:fullscreen .image-popup-viewport.is-zoomed {
+  cursor: move;
 }
 
 .image-popup-close,
