@@ -111,6 +111,7 @@ describe('ImageGallery', () => {
 
   it('keeps gallery navigation available in fullscreen and exits fullscreen on close', async () => {
     let fullscreenElement: Element | null = null
+    let fullscreenRequestTarget: HTMLElement | null = null
     const originalEnabled = Object.getOwnPropertyDescriptor(document, 'fullscreenEnabled')
     const originalElement = Object.getOwnPropertyDescriptor(document, 'fullscreenElement')
     const originalRequest = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'requestFullscreen')
@@ -126,8 +127,9 @@ describe('ImageGallery', () => {
     })
     Object.defineProperty(HTMLElement.prototype, 'requestFullscreen', {
       configurable: true,
-      value: async function (this: HTMLElement) {
-        fullscreenElement = this
+      value: async () => {
+        if (!fullscreenRequestTarget) throw new Error('No fullscreen request target was configured')
+        fullscreenElement = fullscreenRequestTarget
         document.dispatchEvent(new Event('fullscreenchange'))
       },
     })
@@ -137,6 +139,7 @@ describe('ImageGallery', () => {
       await wrapper.find('button.image-hit-area').trigger('click')
       await wrapper.find('.modal-image-viewport').trigger('wheel', { deltaY: -100 })
       expect(wrapper.find('.modal-image-viewport').classes()).not.toContain('is-zoomed')
+      fullscreenRequestTarget = wrapper.find<HTMLElement>('.gallery-fullscreen-viewer').element
       await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
       await flushPromises()
       expect(fullscreenElement).toBe(wrapper.find('.gallery-fullscreen-viewer').element)
