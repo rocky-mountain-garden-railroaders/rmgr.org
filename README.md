@@ -91,3 +91,6 @@ npm run test:e2e -- --debug
 ```sh
 npm run lint
 ```
+
+Pull requests also run `npm run lint:check` in the GitHub Actions `build` check.
+This checks Oxlint and ESLint without applying fixes.

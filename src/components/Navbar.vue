@@ -37,6 +37,8 @@ import { useDisplay } from 'vuetify'
 import logo from '@/assets/logo.webp'
 import { navItems } from '@/navItems'
 
+defineOptions({ name: 'AppNavbar' })
+
 const drawer = ref(false)
 const { mdAndDown } = useDisplay()
 const mobile = computed(() => mdAndDown.value)
