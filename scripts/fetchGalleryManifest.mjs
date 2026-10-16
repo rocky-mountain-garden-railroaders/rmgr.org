@@ -95,7 +95,7 @@ export const run = async ({
   if (!accessToken) {
     throw new Error(
       'GCS_ACCESS_TOKEN is not set. In CI it comes from the Google auth step; locally run ' +
-        '`GCS_ACCESS_TOKEN=$(gcloud auth print-access-token) npm run gallery:manifest`.',
+        '`GCS_ACCESS_TOKEN=$(gcloud auth print-access-token) node scripts/fetchGalleryManifest.mjs`.',
     )
   }
 

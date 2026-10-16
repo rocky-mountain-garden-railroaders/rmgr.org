@@ -17,6 +17,8 @@ export const isMappableLocation = (location: string) => {
 }
 
 export const openInMaps = (event: Event, location: string) => {
+  if (event.type === 'auxclick' && (!(event instanceof MouseEvent) || event.button !== 1)) return
+
   event.preventDefault()
   event.stopPropagation()
 
