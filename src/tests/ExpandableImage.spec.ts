@@ -1,4 +1,4 @@
-import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createVuetify } from 'vuetify'
 import { VDialog } from 'vuetify/components/VDialog'
@@ -8,6 +8,10 @@ import GScale from '@/views/GScale.vue'
 
 enableAutoUnmount(afterEach)
 afterEach(() => vi.unstubAllGlobals())
+const fullscreenCleanups: (() => void)[] = []
+afterEach(() => {
+  fullscreenCleanups.splice(0).forEach((cleanup) => cleanup())
+})
 
 const stubs = {
   VDialog: {
@@ -24,7 +28,96 @@ const stubs = {
   VImg: { props: ['src', 'alt'], template: '<img :src="src" :alt="alt" />' },
 }
 
+const mockFullscreen = () => {
+  let activeElement: Element | null = null
+  const request = vi.fn(async function (this: HTMLElement) {
+    activeElement = this
+    document.dispatchEvent(new Event('fullscreenchange'))
+  })
+  const exit = vi.fn(async () => {
+    activeElement = null
+    document.dispatchEvent(new Event('fullscreenchange'))
+  })
+  const properties = [
+    [document, 'fullscreenEnabled', { value: true }],
+    [document, 'fullscreenElement', { get: () => activeElement }],
+    [document, 'exitFullscreen', { value: exit }],
+    [HTMLElement.prototype, 'requestFullscreen', { value: request }],
+  ] as const
+  for (const [target, key, descriptor] of properties) {
+    const original = Object.getOwnPropertyDescriptor(target, key)
+    Object.defineProperty(target, key, { ...descriptor, configurable: true })
+    fullscreenCleanups.push(() => {
+      if (original) Object.defineProperty(target, key, original)
+      else Reflect.deleteProperty(target, key)
+    })
+  }
+  return { request, exit }
+}
+
 describe('ExpandableImage', () => {
+  it('enters and exits browser fullscreen while keeping the image controls available', async () => {
+    const { request, exit } = mockFullscreen()
+    const wrapper = mount(ExpandableImage, {
+      props: { src: '/photo.jpg', alt: 'Garden railway' },
+      global: { stubs },
+    })
+    await wrapper.find('.expandable-image').trigger('click')
+    await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
+    await flushPromises()
+    expect(request).toHaveBeenCalledOnce()
+    expect(document.fullscreenElement).toBe(wrapper.find('.image-popup-viewer').element)
+    expect(wrapper.find('[aria-label="Close image"]').exists()).toBe(true)
+    await wrapper.find('[aria-label="Exit fullscreen"]').trigger('click')
+    await flushPromises()
+    expect(exit).toHaveBeenCalledOnce()
+    expect(wrapper.find('[aria-label="Enter fullscreen"]').exists()).toBe(true)
+  })
+
+  it('updates the fullscreen button after the browser exits fullscreen', async () => {
+    mockFullscreen()
+    const wrapper = mount(ExpandableImage, {
+      props: { src: '/photo.jpg', alt: 'Garden railway' },
+      global: { stubs },
+    })
+    await wrapper.find('.expandable-image').trigger('click')
+    await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
+    await flushPromises()
+    await document.exitFullscreen()
+    await flushPromises()
+    expect(wrapper.find('[aria-label="Enter fullscreen"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+  })
+
+  it('exits fullscreen when the image is closed', async () => {
+    const { exit } = mockFullscreen()
+    const wrapper = mount(ExpandableImage, {
+      props: { src: '/photo.jpg', alt: 'Garden railway' },
+      global: { stubs },
+    })
+    await wrapper.find('.expandable-image').trigger('click')
+    await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[aria-label="Close image"]').trigger('click')
+    await flushPromises()
+    expect(exit).toHaveBeenCalledOnce()
+    expect(document.fullscreenElement).toBeNull()
+  })
+
+  it('reports fullscreen request failures without closing the image', async () => {
+    const { request } = mockFullscreen()
+    request.mockRejectedValueOnce(new Error('Fullscreen denied'))
+    const wrapper = mount(ExpandableImage, {
+      props: { src: '/photo.jpg', alt: 'Garden railway' },
+      global: { stubs },
+    })
+    await wrapper.find('.expandable-image').trigger('click')
+    await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[role="alert"]').text()).toContain('Unable to change fullscreen')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+  })
+
   it.each(['close button', 'Escape'])(
     'restores focus to the activator after dismissal with %s',
     async (dismissal) => {
@@ -72,6 +165,7 @@ describe('ExpandableImage', () => {
     expect(popup.attributes('aria-label')).toBe('Garden railway')
     expect(popup.find('img').attributes('src')).toBe('/photo.jpg')
     expect(popup.find('img').attributes('alt')).toBe('Garden railway')
+    expect(popup.find('.image-popup-fullscreen').exists()).toBe(false)
     await popup.find('[aria-label="Close image"]').trigger('click')
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
   })
