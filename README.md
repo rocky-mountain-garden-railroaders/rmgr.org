@@ -24,6 +24,10 @@ commands below.
 pnpm install
 ```
 
+Dependency updates respect the 14-day minimum release age configured in
+`pnpm-workspace.yaml`. Use `pnpm update` for updates within the declared version
+ranges and `pnpm audit` to check for known vulnerabilities.
+
 ### Compile and Hot-Reload for Development
 
 ```sh
