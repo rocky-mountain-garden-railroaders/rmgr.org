@@ -4,6 +4,7 @@ import GallerySection from '@/components/GallerySection.vue'
 import { galleryGroups } from '@/utils/galleryImages'
 import { useRoute } from 'vue-router'
 import { useImageFullscreen } from '@/composables/useImageFullscreen'
+import { useImageZoom } from '@/composables/useImageZoom'
 
 defineOptions({ name: 'ImageGallery' })
 
@@ -19,6 +20,10 @@ const slideshowDelayMs = 5000
 
 const activeGroup = computed(() => galleryGroups[activeGroupIndex.value] ?? null)
 const activeImage = computed(() => activeGroup.value?.images[activeImageIndex.value] ?? null)
+const { imageStyle, isZoomed, onWheel, updateOrigin } = useImageZoom(
+  computed(() => isLightboxOpen.value && isFullscreen.value),
+  () => activeImage.value?.src,
+)
 const hasMultipleImages = computed(() => (activeGroup.value?.images.length ?? 0) > 1)
 const isMobileView = ref(false)
 let mediaQuery: MediaQueryList | null = null
@@ -26,6 +31,9 @@ const mobileBreakpoint = '(max-width: 1279.98px)'
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
 
 const isSlideshowPaused = ref(false)
+watch(isZoomed, (zoomed) => {
+  if (zoomed) isSlideshowPaused.value = true
+})
 const shouldAutoplay = computed(
   () => isLightboxOpen.value && hasMultipleImages.value && !isSlideshowPaused.value,
 )
@@ -168,13 +176,21 @@ onUnmounted(() => {
                 variant="text"
                 @click="toggleFullscreen"
               />
-              <v-img
-                :alt="activeImage.alt"
-                :src="activeImage.src"
-                class="bg-black"
-                contain
-                max-height="75vh"
-              />
+              <div
+                class="modal-image-viewport"
+                :class="{ 'is-zoomed': isZoomed }"
+                @wheel="onWheel"
+                @mousemove="updateOrigin"
+              >
+                <v-img
+                  :alt="activeImage.alt"
+                  :src="activeImage.src"
+                  :style="imageStyle"
+                  class="bg-black"
+                  contain
+                  max-height="75vh"
+                />
+              </div>
 
               <v-btn
                 v-if="hasMultipleImages"
@@ -286,6 +302,18 @@ onUnmounted(() => {
 
 .modal-image-shell {
   position: relative;
+}
+
+.modal-image-viewport {
+  overflow: hidden;
+}
+
+.gallery-fullscreen-viewer:fullscreen .modal-image-viewport {
+  cursor: zoom-in;
+}
+
+.gallery-fullscreen-viewer:fullscreen .modal-image-viewport.is-zoomed {
+  cursor: move;
 }
 
 .modal-close,
