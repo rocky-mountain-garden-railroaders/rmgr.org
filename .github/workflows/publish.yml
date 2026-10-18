@@ -3,12 +3,12 @@ name: Build and deploy site to Pages
 on:
   push:
     branches:
-      - main
-      - staging
+    - main
+    - staging
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *'
+  - cron: '0 */6 * * *'
 
 permissions:
   contents: read
@@ -22,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
     - name: Checkout
       uses: actions/checkout@v7
+
     - name: Restore cached calendar feed
       uses: actions/cache@v6
       with:
@@ -48,8 +48,10 @@ jobs:
       with:
         path: dist
 
-  deploy:
-    if: github.ref == 'refs/heads/main'
+  stage:
+    name: Publish to staging
+
+    if: github.ref == 'refs/heads/staging'
 
     permissions:
       pages: write
@@ -59,12 +61,58 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
-    runs-on: ubuntu-latest
-
     needs: build
 
-    steps:
+    runs-on: ubuntu-latest
 
+    steps:
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v5
+
+  deploy:
+    name: Publish to production
+
+    if: github.ref == 'refs/heads/main'
+
+    environment:
+      name: deployment
+
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download pages artifact
+      uses: actions/download-artifact@v5
+      with:
+        name: github-pages
+
+    - name: Extract
+      run: |
+        mkdir dist
+        tar -xf artifact.tar -C dist
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.PROD_DEPLOY_KEY }}
+
+    - name: Commit and force-push to gh-pages
+      working-directory: dist
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+        git init -b gh-pages
+        git remote add deployment git@github.com:${{github.repository_owner}}/deployment.git
+
+        touch .nojekyll
+
+        # Carry over the CNAME the deployment repo's Pages settings committed, if any
+        git fetch --depth 1 --filter=blob:none deployment gh-pages
+        git checkout deployment/gh-pages -- CNAME || true
+
+        git add -A
+        git commit -m "Publish ${GITHUB_REPOSITORY}@${GITHUB_SHA}"
+        git push --force deployment gh-pages
