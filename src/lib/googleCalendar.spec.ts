@@ -258,12 +258,12 @@ END:VCALENDAR`)
     })
   })
 
-  it('GIVEN an all-day event with no TZID WHEN parsing on either side of the Edmonton DST transition THEN each instance uses the correct local UTC offset', () => {
+  it('GIVEN an all-day event with no TZID WHEN parsing on either side of a historical Edmonton DST transition THEN each instance uses the correct local UTC offset', () => {
     const summerEvent = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
 BEGIN:VEVENT
 SUMMARY:All-day Meeting
-DTSTART;VALUE=DATE:20260917
-DTEND;VALUE=DATE:20260918
+DTSTART;VALUE=DATE:20240917
+DTEND;VALUE=DATE:20240918
 LOCATION:Clubhouse
 END:VEVENT
 END:VCALENDAR`)
@@ -271,21 +271,21 @@ END:VCALENDAR`)
     const winterEvent = parseGoogleCalendarIcs(`BEGIN:VCALENDAR
 BEGIN:VEVENT
 SUMMARY:All-day Meeting
-DTSTART;VALUE=DATE:20261119
-DTEND;VALUE=DATE:20261120
+DTSTART;VALUE=DATE:20241119
+DTEND;VALUE=DATE:20241120
 LOCATION:Clubhouse
 END:VEVENT
 END:VCALENDAR`)
 
     expect(summerEvent[0]).toMatchObject({
-      date: 'September 17, 2026',
+      date: 'September 17, 2024',
       time: 'All day',
-      startsAt: '2026-09-17T06:00:00.000Z',
+      startsAt: '2024-09-17T06:00:00.000Z',
     })
     expect(winterEvent[0]).toMatchObject({
-      date: 'November 19, 2026',
+      date: 'November 19, 2024',
       time: 'All day',
-      startsAt: '2026-11-19T07:00:00.000Z',
+      startsAt: '2024-11-19T07:00:00.000Z',
     })
   })
 
