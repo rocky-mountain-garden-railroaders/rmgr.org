@@ -4,12 +4,12 @@
       <v-col class="bg-surface pa-6 pa-sm-12 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>
           <v-card-item class="pa-0 mb-6">
-            <v-card-title class="text-h4 font-weight-black text-primary pa-0">
+            <v-card-title class="text-headline-large font-weight-black text-primary pa-0">
               About Us
             </v-card-title>
           </v-card-item>
 
-          <v-card-text class="pa-0 text-body-1 text-on-surface">
+          <v-card-text class="pa-0 text-body-large text-on-surface">
             <v-row class="mb-2" align="center">
               <v-col class="pe-md-6 mb-4 mb-md-0" cols="12" md="6">
                 <p class="mb-4">
@@ -37,10 +37,10 @@
 
             <v-row class="mt-2">
               <v-col class="pe-md-6 mb-6 mb-md-0" cols="12" md="6">
-                <div class="text-h6 font-weight-bold text-primary mb-2">What We Do</div>
+                <div class="text-title-large font-weight-bold text-primary mb-2">What We Do</div>
                 <p class="mb-3">Garden railroading is a multidisciplinary hobby that blends:</p>
 
-                <p class="text-body-1 font-weight-light">
+                <p class="text-body-large font-weight-light">
                   Landscaping and gardening, model making, painting, electronics, 3D printing,
                   and storytelling and design.
                 </p>
@@ -54,7 +54,7 @@
               </v-col>
 
               <v-col cols="12" md="6">
-                <div class="text-h6 font-weight-bold text-primary mb-2">
+                <div class="text-title-large font-weight-bold text-primary mb-2">
                   A Family-Friendly Hobby
                 </div>
                 <p class="mb-4">
@@ -77,7 +77,7 @@
         <v-card class="w-100 text-surface" color="transparent" flat>
           <v-row class="mb-6">
             <v-col class="pe-md-6 mb-6 mb-md-0" cols="12" md="6">
-              <div class="text-h5 font-weight-bold mb-3">Community Engagement</div>
+              <div class="text-headline-small font-weight-bold mb-3">Community Engagement</div>
               <p class="mb-4 opacity-90">
                 We're proud to share our love of trains with our community through:
               </p>
@@ -91,7 +91,7 @@
             </v-col>
 
             <v-col cols="12" md="5">
-              <div class="text-h5 font-weight-bold mb-3">Annual Events</div>
+              <div class="text-headline-small font-weight-bold mb-3">Annual Events</div>
               <p class="mb-4 opacity-90">
                 One of the most anticipated events is our annual Garden Tour, which is open to
                 anyone interested. It’s usually held in July or August.
@@ -108,13 +108,13 @@
 
           <v-row>
             <v-col class="pe-md-6 mb-6 mb-md-0" cols="12" md="6">
-              <div class="text-h5 font-weight-bold mb-1">Membership</div>
-              <div class="text-body-1 text-secondary font-weight-bold mb-3">
+              <div class="text-headline-small font-weight-bold mb-1">Membership</div>
+              <div class="text-body-large text-secondary font-weight-bold mb-3">
                 Just $40 per family annually
               </div>
               <p class="mb-3 opacity-90">Membership Includes:</p>
 
-              <p class="text-body-1 font-weight-light opacity-90">
+              <p class="text-body-large font-weight-light opacity-90">
                 Access to our video library, expert guidance from experienced
                 members, club events, tours and layout visits, and invitations to work parties
                 on layouts.
@@ -122,9 +122,9 @@
             </v-col>
 
             <v-col cols="12" md="6">
-              <div class="text-h5 font-weight-bold mb-4">Objectives</div>
+              <div class="text-headline-small font-weight-bold mb-4">Objectives</div>
 
-              <p class="text-body-1 font-weight-light opacity-90">
+              <p class="text-body-large font-weight-light opacity-90">
                 We promote the hobby of Large Scale Model Railroading, encourage and assist new
                 members entering the hobby, have fun and enjoy good fellowship through modelling
                 and events, support each other with technical and physical assistance, and
@@ -137,8 +137,8 @@
 
           <v-row align="center" class="pt-2">
             <v-col class="mb-4 mb-sm-0" cols="12" sm="8">
-              <div class="text-h5 font-weight-bold mb-1">Interested in Joining?</div>
-              <div class="text-body-1 font-weight-light opacity-80">
+              <div class="text-headline-small font-weight-bold mb-1">Interested in Joining?</div>
+              <div class="text-body-large font-weight-light opacity-80">
                 Whether you're a lifelong train fan or have a newfound interest in G-Scale trains,
                 the RMGR welcomes all.
               </div>
