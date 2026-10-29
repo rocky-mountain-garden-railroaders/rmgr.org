@@ -16,9 +16,7 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
-Use Node.js `^24.15.0 || >=26.0.0` (24.15.0 or later in the 24.x series, or
-26.0.0 or newer) and pnpm 10.18.3, as pinned in `package.json`. Node.js 25 is not
-supported.
+Use Node.js 24.15 or newer and pnpm 10.18.3, as pinned in `package.json`.
 If pnpm is not installed, substitute `npx pnpm@10.18.3` for `pnpm` in the
 commands below.
 
@@ -118,5 +116,5 @@ before merging. Organization administrators currently have a ruleset bypass.
 pnpm run lint
 ```
 
-Pull requests also run `npm run lint:check` in the GitHub Actions `build` check.
+Pull requests also run `pnpm run lint:check` in the GitHub Actions `build` check.
 This checks Oxlint and ESLint without applying fixes.

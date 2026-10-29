@@ -76,7 +76,7 @@ jobs:
 
     - name: Check lint
       if: github.event_name == 'pull_request'
-      run: npm run lint:check
+      run: pnpm run lint:check
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v5

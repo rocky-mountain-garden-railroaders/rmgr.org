@@ -7,10 +7,10 @@
       >
         <v-card class="w-100 bg-surface" flat>
           <v-card-item class="pa-0 mb-6">
-            <v-card-title class="text-h4 font-weight-bold text-primary pa-0">
+            <v-card-title class="text-headline-large font-weight-bold text-primary pa-0">
               Get in Touch
             </v-card-title>
-            <v-card-subtitle class="text-body-1 pa-0 mt-2 text-medium-emphasis">
+            <v-card-subtitle class="text-body-large pa-0 mt-2 text-medium-emphasis">
               Have questions about memberships, events, or joining the club? We would love to hear
               from you.
             </v-card-subtitle>
@@ -97,7 +97,7 @@
 
       <v-col class="bg-primary pa-6 pa-sm-12 rounded-b-lg" cols="12">
         <v-card class="w-100" color="transparent" flat>
-          <v-card-title class="text-h4 font-weight-bold pa-0 text-surface">
+          <v-card-title class="text-headline-large font-weight-bold pa-0 text-surface">
             Club Information
           </v-card-title>
 
@@ -108,7 +108,7 @@
               <div class="d-flex align-start">
                 <div>
                   <div class="d-flex align-center ga-2 mb-1">
-                    <div class="text-h6 font-weight-bold text-uppercase text-surface">
+                    <div class="text-title-large font-weight-bold text-uppercase text-surface">
                       Meeting Schedule
                     </div>
                     <v-icon
@@ -117,7 +117,7 @@
                       icon="mdi-clock-outline"
                     ></v-icon>
                   </div>
-                  <div class="text-body-1 font-weight-light text-surface opacity-90 mt-1">
+                  <div class="text-body-large font-weight-light text-surface opacity-90 mt-1">
                     Our club meetings occur from September to June on the third Thursday of every
                     month at 7:15pm. In July and August we have no meetings. Visitors are always welcome to attend.
                   </div>
@@ -146,7 +146,7 @@
               <div class="d-flex align-start">
                 <div>
                   <div class="d-flex align-center ga-2 mb-1">
-                    <div class="text-h6 font-weight-bold text-uppercase text-surface">
+                    <div class="text-title-large font-weight-bold text-uppercase text-surface">
                       Monthly Meeting Location
                     </div>
                     <v-icon
@@ -155,7 +155,7 @@
                       icon="mdi-map-marker-outline"
                     ></v-icon>
                   </div>
-                  <div class="text-body-1 font-weight-light text-surface opacity-80 mt-1">
+                  <div class="text-body-large font-weight-light text-surface opacity-80 mt-1">
                     2715 Dovely Park SE<br />
                     Calgary, AB T2B 3G8
                   </div>

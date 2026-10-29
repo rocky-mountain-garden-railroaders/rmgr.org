@@ -33,10 +33,10 @@ const emit = defineEmits<{
           </template>
 
           <div class="image-title-overlay">
-            <span class="text-h6 font-weight-bold text-white d-block">
+            <span class="text-title-large font-weight-bold text-white d-block">
               {{ title }}
             </span>
-            <span v-if="description" class="text-body-2 text-white d-block mt-1 opacity-90">
+            <span v-if="description" class="text-body-medium text-white d-block mt-1 opacity-90">
               {{ description }}
             </span>
           </div>

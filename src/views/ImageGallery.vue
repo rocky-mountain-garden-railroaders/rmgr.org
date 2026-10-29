@@ -109,10 +109,10 @@ onUnmounted(() => {
       <v-col class="bg-surface pa-6 pa-sm-12 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>
           <v-card-item class="pa-0">
-            <v-card-title class="text-h4 font-weight-black text-primary pa-0">
+            <v-card-title class="text-headline-large font-weight-black text-primary pa-0">
               Image Gallery
             </v-card-title>
-            <v-card-subtitle class="pa-0 mt-2 text-body-1 text-medium-emphasis text-wrap">
+            <v-card-subtitle class="pa-0 mt-2 text-body-large text-medium-emphasis text-wrap">
               Each preview below is a gallery folder &mdash; click one to browse a slideshow of all of its photos.
             </v-card-subtitle>
           </v-card-item>
@@ -214,7 +214,7 @@ onUnmounted(() => {
 
           <v-card-text
             v-if="activeImage.caption"
-            class="text-body-1 bg-surface py-4 px-6 text-left text-on-surface border-t"
+            class="text-body-large bg-surface py-4 px-6 text-left text-on-surface border-t"
           >
             {{ activeImage.caption }}
           </v-card-text>

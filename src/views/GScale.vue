@@ -11,12 +11,12 @@ defineOptions({ name: 'GScaleInfo' })
       <v-col class="bg-surface pa-6 pa-sm-12 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>
           <v-card-item class="pa-0 mb-6">
-            <v-card-title class="text-h4 font-weight-black text-primary pa-0">
+            <v-card-title class="text-headline-large font-weight-black text-primary pa-0">
               What is G-Scale Model Railroading?
             </v-card-title>
           </v-card-item>
 
-          <v-card-text class="pa-0 text-body-1 text-on-surface">
+          <v-card-text class="pa-0 text-body-large text-on-surface">
             <v-row class="mb-2" align="center">
               <v-col class="pe-md-6 mb-4 mb-md-0" cols="12" md="6">
                 <p class="body-copy mb-0">
@@ -28,7 +28,7 @@ defineOptions({ name: 'GScaleInfo' })
                   the most common.
                 </p>
 
-                <div class="text-h5 font-weight-bold text-primary mt-6 mb-3">History of G-Scale</div>
+                <div class="text-headline-small font-weight-bold text-primary mt-6 mb-3">History of G-Scale</div>
                 <p class="body-copy mb-4">
                   First introduced in the 1930s, G-Scale was initially popular among European
                   modelers who wanted larger, more detailed trains for backyard garden and attic
@@ -36,7 +36,7 @@ defineOptions({ name: 'GScaleInfo' })
                   favor much smaller model train scales.
                 </p>
 
-                <div class="text-h5 font-weight-bold text-primary mb-3">The Outdoor Revolution</div>
+                <div class="text-headline-small font-weight-bold text-primary mb-3">The Outdoor Revolution</div>
                 <p class="body-copy mb-0">
                   In 1968, the German company LGB (Lehmann Gross Bahn) fundamentally revolutionized
                   the market by introducing durable, completely weather-resistant trains made
@@ -66,7 +66,7 @@ defineOptions({ name: 'GScaleInfo' })
         <v-card class="w-100 text-surface" color="transparent" flat>
           <v-row class="mb-6">
             <v-col class="pe-md-6 mb-6 mb-md-0" cols="12" md="6">
-              <div class="text-h5 font-weight-bold mb-3">Rise in Popularity</div>
+              <div class="text-headline-small font-weight-bold mb-3">Rise in Popularity</div>
               <p class="body-copy mb-4 opacity-90">
                 By the mid-1980s, G-Scale was well established. A variety of
                 high-fidelity locomotives, rolling stock, modular buildings, and landscape
@@ -79,7 +79,7 @@ defineOptions({ name: 'GScaleInfo' })
             </v-col>
 
             <v-col cols="12" md="6">
-              <div class="text-h5 font-weight-bold mb-3">Why G-Scale?</div>
+              <div class="text-headline-small font-weight-bold mb-3">Why G-Scale?</div>
               <p class="mb-4 opacity-90">
                 G-Scale is loved for its substantial, hands-on size, massive visual impact, and
                 rugged outdoor durability. Heavy duty solid brass rails can safely be left out in

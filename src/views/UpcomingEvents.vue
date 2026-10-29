@@ -58,11 +58,11 @@ defineExpose({
       <v-col class="bg-surface pa-4 rounded-t-lg" cols="12">
         <v-card class="w-100 bg-surface" flat>
           <v-card-item>
-            <v-card-title class="text-h4 font-weight-black text-primary text-wrap pl-0">
+            <v-card-title class="text-headline-large font-weight-black text-primary text-wrap pl-0">
               {{ pageTitle }}
             </v-card-title>
             <v-card-subtitle
-              class="pa-0 mt-2 text-body-2 text-medium-emphasis d-flex align-center flex-wrap"
+              class="pa-0 mt-2 text-body-medium text-medium-emphasis d-flex align-center flex-wrap"
               style="column-gap: 2rem; row-gap: 0.5rem"
             >
               <button
