@@ -52,6 +52,14 @@ pnpm run test:unit
 
 ### Gallery image metadata
 
+The gallery chooser downloads only featured covers as they enter the viewport.
+These covers (the first photo in each gallery) are the only photos requested
+before a gallery is selected. Opening a gallery mounts just its current slide;
+the remaining photos load one at a time through navigation or the existing
+five-second slideshow. Pause the slideshow to stop automatic photo downloads.
+Closing the viewer removes its image and stops the slideshow. Gallery imports
+contain asset URLs, not inlined photo data.
+
 Embedded photos open in a full-window image viewer. Where the browser supports
 fullscreen, embedded photo viewers and expanded galleries include a fullscreen
 toggle alongside their other controls. Exiting browser fullscreen returns to the
