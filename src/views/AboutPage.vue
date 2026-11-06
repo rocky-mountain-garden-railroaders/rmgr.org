@@ -38,9 +38,7 @@
             <v-row class="mt-2">
               <v-col class="pe-md-6 mb-6 mb-md-0" cols="12" md="6">
                 <div class="text-title-large font-weight-bold text-primary mb-2">What We Do</div>
-                <p class="mb-3">Garden railroading is a multidisciplinary hobby that blends:</p>
-
-                <p class="text-body-large font-weight-light">
+                <p class="mb-3">Garden railroading is a multidisciplinary hobby that blends:
                   Landscaping and gardening, model making, painting, electronics, 3D printing,
                   and storytelling and design.
                 </p>
