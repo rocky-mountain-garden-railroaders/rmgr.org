@@ -107,6 +107,17 @@ pnpm run test:e2e tests/example.spec.ts
 pnpm run test:e2e --debug
 ```
 
+### License
+
+The MIT License in `LICENSE` applies to the website's source code only. It does
+not apply to third-party assets or content in this repository; those remain
+subject to their own terms.
+
+Some original written content and photos or other materials may be available
+under CC BY 4.0 only where RMGR owns them or has authority to license them.
+See [`CONTENT-LICENSE.md`](CONTENT-LICENSE.md) for the scope and attribution
+terms. No third-party or unclear-rights content is covered by this notice.
+
 ### Pull request checks
 
 The GitHub Actions `build` check installs dependencies from the frozen pnpm
