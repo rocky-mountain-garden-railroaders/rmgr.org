@@ -1,16 +1,21 @@
 import galleryMetadata from '../assets/images/galleries/galleries.json'
 
-export type GalleryImage = {
+type GalleryMediaDetails = {
   src: string
   fileName: string
   alt: string
   caption: string
 }
 
+export type GalleryImage = GalleryMediaDetails & { kind: 'image' }
+export type GalleryVideo = GalleryMediaDetails & { kind: 'video' }
+export type GalleryMedia = GalleryImage | GalleryVideo
+
 export type GalleryGroup = {
   title: string
   description: string
-  images: GalleryImage[]
+  media: GalleryMedia[]
+  cover?: GalleryImage
 }
 
 export type GalleryImageMetadata = {
@@ -21,7 +26,6 @@ export type GalleryImageMetadata = {
 export type GalleryFolderMetadata = {
   title?: string
   description?: string
-  /** Display priority in the gallery list: higher numbers are listed first. */
   order?: number
   images?: Record<string, GalleryImageMetadata>
 }
@@ -31,18 +35,19 @@ export type GalleryMetadata = Record<string, GalleryFolderMetadata>
 const metadataByFolder: GalleryMetadata =
   (galleryMetadata as { galleries?: GalleryMetadata }).galleries ?? {}
 
-const imageModules = import.meta.glob('../assets/images/galleries/**/*.{jpg,jpeg,png,webp,gif}', {
-  eager: true,
-  import: 'default',
-  // Import URLs only, including for small photos that Vite would otherwise inline.
-  query: '?url&no-inline',
-})
+const mediaModules = import.meta.glob(
+  '../assets/images/galleries/**/*.{jpg,jpeg,png,webp,gif,[mM][pP]4}',
+  {
+    eager: true,
+    import: 'default',
+    query: '?url&no-inline',
+  },
+)
 
 const GALLERIES_SEGMENT = 'galleries'
 
 const humanize = (value: string) => value.replace(/[-_]+/g, ' ').trim()
 
-// Galleries without a valid order sort after every numbered gallery.
 const galleryOrder = (metadata?: GalleryFolderMetadata) => {
   const order = metadata?.order
   return typeof order === 'number' && Number.isFinite(order) ? order : Number.NEGATIVE_INFINITY
@@ -65,7 +70,7 @@ export const buildGalleryGroups = (
 ): GalleryGroup[] => {
   const groupTitle = (folder: string) => metadata[folder]?.title?.trim() || humanize(folder)
 
-  const fallbackAlt = (folder: string) => `Photo from the ${groupTitle(folder)} gallery`
+  const isVideo = (fileName: string) => /\.mp4$/i.test(fileName)
 
   const orderedFileNames = (folder: string, fileNames: string[]) => {
     const curatedRank = new Map(
@@ -87,24 +92,34 @@ export const buildGalleryGroups = (
     .map(([folder, sources]) => {
       const folderMetadata = metadata[folder]
 
-      const images = orderedFileNames(folder, Object.keys(sources)).map((fileName) => {
+      const fileNames = orderedFileNames(folder, Object.keys(sources))
+      const orderedMedia = [
+        ...fileNames.filter((name) => !isVideo(name)),
+        ...fileNames.filter(isVideo),
+      ]
+      const media = orderedMedia.map((fileName): GalleryMedia => {
+        const kind = isVideo(fileName) ? 'video' : 'image'
         const imageMetadata = folderMetadata?.images?.[fileName]
         const caption = imageMetadata?.caption?.trim() ?? ''
-        const alt = imageMetadata?.alt?.trim() || caption || fallbackAlt(folder)
+        const alt =
+          imageMetadata?.alt?.trim() ||
+          caption ||
+          `${kind === 'video' ? 'Video' : 'Photo'} from the ${groupTitle(folder)} gallery`
 
-        return { src: sources[fileName], fileName, alt, caption }
+        return { kind, src: sources[fileName], fileName, alt, caption }
       })
 
       return {
         group: {
           title: groupTitle(folder),
           description: folderMetadata?.description?.trim() ?? '',
-          images,
+          media,
+          cover: media.find((item): item is GalleryImage => item.kind === 'image'),
         },
         order: galleryOrder(folderMetadata),
       }
     })
-    .filter(({ group }) => group.images.length > 0)
+    .filter(({ group }) => group.media.length > 0)
     .sort((left, right) => {
       if (left.order !== right.order) return left.order < right.order ? 1 : -1
       return left.group.title.localeCompare(right.group.title)
@@ -112,7 +127,7 @@ export const buildGalleryGroups = (
     .map(({ group }) => group)
 }
 
-const sourcesByFolder = Object.entries(imageModules).reduce<Record<string, Record<string, string>>>(
+const sourcesByFolder = Object.entries(mediaModules).reduce<Record<string, Record<string, string>>>(
   (groups, [path, src]) => {
     const { folder, fileName } = splitGalleryPath(path)
     if (!fileName || !Object.prototype.hasOwnProperty.call(metadataByFolder, folder)) return groups
