@@ -12,6 +12,13 @@ import {
 const jsonResponse = (body) => ({ ok: true, status: 200, statusText: 'OK', json: async () => body })
 
 describe('buildManifest', () => {
+  it('includes MP4 objects alongside photos and skips other video containers', () => {
+    expect(buildManifest(['Layout/train.MP4', 'Layout/cover.webp', 'Layout/raw.mov'])).toEqual({
+      manifest: { galleries: { Layout: ['cover.webp', 'train.MP4'] } },
+      skipped: ['Layout/raw.mov'],
+    })
+  })
+
   it('GIVEN folder/image objects WHEN building THEN they are grouped and sorted by folder and file', () => {
     const { manifest, skipped } = buildManifest([
       'Supertrain 2025/b.jpg',

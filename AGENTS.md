@@ -31,7 +31,10 @@ For images within each gallery:
   ascending natural filename order.
 - Preserve explicitly requested photo-priority overrides.
 - Preserve existing titles, descriptions, alt text, and captions.
-- Include all supported images in the gallery subfolder and omit videos.
+- Include all supported images in the gallery subfolder. MP4s are discovered
+  automatically and appended after photos; list published compressed videos with
+  their metadata in the existing `images` map. Never move a video ahead of the
+  featured photo or put uncompressed camera originals in the site assets.
 - Do not use filesystem modification dates to infer capture dates.
 
 Validate gallery changes with
