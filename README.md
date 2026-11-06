@@ -61,22 +61,21 @@ Closing the viewer removes its media and stops the slideshow. Gallery imports
 contain asset URLs, not inlined photo or video data.
 
 MP4 files in published gallery folders appear after the photos, preserving the
-featured cover and curated photo order. Video slides use native controls, inline
-playback on mobile, no autoplay, and `preload="none"`: no video data is requested
-until Play is pressed. Reaching a video pauses the slideshow; navigate to a photo
+featured cover and curated photo order. When a selected slideshow reaches a video,
+it attempts muted inline autoplay, with native controls to play and unmute. If
+browser policy blocks autoplay, a prompt directs the user to the native Play
+control. Videos use `preload="none"` and are not mounted or requested for
+unselected galleries. Reaching a video pauses the slideshow; navigate to a photo
 and use Play slideshow to resume. Navigating away or closing stops playback.
 Videos fit the normal and fullscreen viewer without image zoom. MP4 is a
 container, not a codec guarantee; use H.264 video with AAC audio for broad browser
 support. A direct MP4 link and a playback error message are provided for failures.
-The repository currently ignores `*.mp4`. Local ignored videos are not copied to
-new worktrees or included by CI/deployment unless explicitly tracked. The current
-gallery manifest lists 14 web-encoded MP4s: seven in Siwy, five in Mayhew, and two
-in Zoo Lights 2025. These copies use H.264/AAC, faststart, and at most 1280x720
-(720x1280 portrait) without upscaling; they total 194,311,953 bytes. Keep original
-camera files outside the site assets. When preparing a commit, explicitly include
-only these verified compressed copies despite the ignore rule; do not broadly
-force-add every MP4 from another checkout. A clean checkout must contain all 14
-manifest-listed videos for the gallery tests and build to match this workspace.
+The gallery manifest lists 14 tracked, web-encoded MP4s: seven in Siwy, five in
+Mayhew, and two in Zoo Lights 2025. These copies use H.264/AAC, faststart, and at
+most 1280x720 (720x1280 portrait) without upscaling; they total 194,311,953 bytes.
+Keep original camera files outside the site assets. A clean checkout must contain
+all 14 manifest-listed videos for the gallery tests and build to match this
+workspace.
 The bucket manifest helper also recognizes MP4s, but
 the current app imports local assets; that helper is not a remote-video loader.
 

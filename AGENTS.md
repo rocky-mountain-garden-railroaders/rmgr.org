@@ -1,5 +1,10 @@
 # Agent instructions
 
+## Branch naming
+
+Use the `ts/` prefix for new branches, followed by a short, descriptive
+kebab-case name (for example, `ts/gallery-video-support`).
+
 ## Gallery manifest updates
 
 When adding or updating galleries in

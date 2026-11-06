@@ -116,6 +116,7 @@ describe('ImageGallery', () => {
   beforeEach(() => {
     vi.unstubAllGlobals()
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -165,13 +166,14 @@ describe('ImageGallery', () => {
       expect(video.attributes('controls')).toBeDefined()
       expect(video.attributes('playsinline')).toBeDefined()
       expect(video.attributes('autoplay')).toBeUndefined()
+      expect(video.element.muted).toBe(true)
+      expect(video.element.play).toHaveBeenCalledOnce()
       expect(video.attributes('aria-label')).toBe('A train running through the layout')
       expect(wrapper.findAll('.modal-image-shell [src]')).toHaveLength(1)
       expect(wrapper.find('.modal-image-viewport').exists()).toBe(false)
       expect(wrapper.find('.modal-slideshow-toggle').exists()).toBe(false)
       expect(wrapper.find('.gallery-debug-filename').text()).toContain('layout-train.MP4')
       expect(wrapper.text()).toContain('An operating session.')
-      expect(vi.getTimerCount()).toBe(0)
       vi.advanceTimersByTime(15000)
       await nextTick()
       expect(wrapper.find('video').attributes('src')).toBe('/layout-train.MP4')
@@ -190,7 +192,6 @@ describe('ImageGallery', () => {
       await wrapper.find('[aria-label="Close gallery viewer"]').trigger('click')
       expect(video.element.pause).toHaveBeenCalledTimes(2)
       expect(wrapper.find('video').exists()).toBe(false)
-      expect(vi.getTimerCount()).toBe(0)
     },
   )
 
@@ -203,10 +204,34 @@ describe('ImageGallery', () => {
     vi.advanceTimersByTime(5000)
     await nextTick()
     expect(wrapper.find('video').exists()).toBe(true)
-    expect(vi.getTimerCount()).toBe(0)
+    vi.advanceTimersByTime(15000)
+    await nextTick()
+    expect(wrapper.find('video').attributes('src')).toBe('/layout-train.MP4')
     const pause = wrapper.find<HTMLVideoElement>('video').element.pause
     wrapper.unmount()
     expect(pause).toHaveBeenCalledOnce()
+  })
+
+  it('falls back to the native Play control when muted autoplay is rejected', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockRejectedValue(new DOMException('Playback requires a user gesture', 'NotAllowedError'))
+    const wrapper = await mountGallery(false)
+
+    await wrapper.findAll('button.image-hit-area')[4].trigger('click')
+    await wrapper.find('[aria-label="Previous slide"]').trigger('click')
+    await flushPromises()
+
+    const video = wrapper.find<HTMLVideoElement>('video')
+    expect(play).toHaveBeenCalledOnce()
+    expect(video.element.muted).toBe(true)
+    expect(video.attributes('controls')).toBeDefined()
+    expect(video.attributes('playsinline')).toBeDefined()
+    expect(wrapper.find('[role="status"]').text()).toContain('Autoplay was blocked')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+
+    await video.trigger('playing')
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
   })
 
   it('keeps gallery navigation available in fullscreen and exits fullscreen on close', async () => {

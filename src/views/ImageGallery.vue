@@ -37,14 +37,31 @@ const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
 const isSlideshowPaused = ref(false)
 const activeVideo = ref<HTMLVideoElement | null>(null)
 const videoError = ref('')
+const videoAutoplayBlocked = ref(false)
 watch(
   activeMedia,
   (media) => {
     activeVideo.value?.pause()
     videoError.value = ''
+    videoAutoplayBlocked.value = false
     if (media?.kind === 'video') isSlideshowPaused.value = true
   },
   { flush: 'pre' },
+)
+watch(
+  [activeMedia, isLightboxOpen],
+  ([media, isOpen]) => {
+    const video = activeVideo.value
+    if (!isOpen || media?.kind !== 'video' || !video) return
+
+    video.muted = true
+    video.play().catch(() => {
+      if (activeMedia.value === media && isLightboxOpen.value && activeVideo.value === video) {
+        videoAutoplayBlocked.value = true
+      }
+    })
+  },
+  { flush: 'post' },
 )
 watch(isZoomed, (zoomed) => {
   if (zoomed) isSlideshowPaused.value = true
@@ -223,9 +240,11 @@ onUnmounted(() => {
                   class="gallery-video"
                   :src="activeMedia.src"
                   :aria-label="activeMedia.alt"
+                  muted
                   controls
                   playsinline
                   preload="none"
+                  @playing="videoAutoplayBlocked = false"
                   @error="
                     videoError =
                       'This video could not be played. Try opening the MP4 directly or use a browser that supports its codec.'
@@ -234,8 +253,11 @@ onUnmounted(() => {
                   Your browser does not support MP4 video.
                 </video>
                 <p v-if="videoError" role="alert" class="video-error">{{ videoError }}</p>
+                <p v-else-if="videoAutoplayBlocked" role="status" class="video-help">
+                  Autoplay was blocked. Press Play to start the video; playback starts muted.
+                </p>
                 <p class="video-help">
-                  Use the video controls to play.
+                  Video starts muted. Use the video controls to play or unmute.
                   <a :href="activeMedia.src" target="_blank" rel="noopener">Open MP4 directly</a>
                 </p>
               </div>

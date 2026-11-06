@@ -13,7 +13,7 @@ for (const viewport of [
     test.describe(`${folder} video at ${viewport.width}px`, () => {
       test.use({ viewport, reducedMotion: 'reduce' })
 
-      test('loads no video until Play and stops playback on navigation or close', async ({
+      test('autoplays muted only for the selected slide and stops on navigation or close', async ({
         page,
       }) => {
         const videoRequests: string[] = []
@@ -44,10 +44,13 @@ for (const viewport of [
         await expect(video).toHaveAttribute('playsinline', '')
         await expect(video).toHaveAttribute('controls', '')
         await expect(viewer.locator('img')).toHaveCount(0)
-        // eslint-disable-next-line playwright/no-networkidle
-        await page.waitForLoadState('networkidle')
-        expect(videoRequests).toEqual([])
-        expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true)
+        await expect
+          .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
+          .toBeGreaterThan(0)
+        expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
+        expect(await video.evaluate((element: HTMLVideoElement) => element.muted)).toBe(true)
+        const activeVideoUrl = new URL((await video.getAttribute('src'))!, page.url()).href
+        expect(videoRequests).toContain(activeVideoUrl)
         const bounds = await video.boundingBox()
         expect(bounds).not.toBeNull()
         expect(bounds!.x).toBeGreaterThanOrEqual(0)
@@ -85,11 +88,64 @@ for (const viewport of [
         await page.getByRole('button', { name: 'Previous slide', exact: true }).click()
         await expect(video).toBeVisible()
         const closingVideo = await video.evaluateHandle((element: HTMLVideoElement) => element)
-        await video.evaluate((element: HTMLVideoElement) => element.play())
+        await expect
+          .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
+          .toBeGreaterThan(0)
         await page.getByRole('button', { name: 'Close gallery viewer', exact: true }).click()
         await expect(viewer).toHaveCount(0)
         expect(await closingVideo.evaluate((element) => element.paused)).toBe(true)
       })
     })
   }
+}
+
+const [policyFolder, policyGallery] = videoGalleries[0]
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  test(`shows manual-play fallback when autoplay is rejected (${viewport.width}px)`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await page.addInitScript(() => {
+      const nativePlay = HTMLMediaElement.prototype.play
+      let rejectAutoplay = true
+      Object.defineProperty(window, '__allowGalleryVideoPlay', {
+        configurable: true,
+        set: (allow) => {
+          rejectAutoplay = !allow
+        },
+      })
+      HTMLMediaElement.prototype.play = function () {
+        if (this.classList.contains('gallery-video') && rejectAutoplay) {
+          return Promise.reject(new DOMException('User gesture required', 'NotAllowedError'))
+        }
+        return nativePlay.call(this)
+      }
+    })
+    await page.goto('/gallery')
+    await page
+      .locator('.gallery-section')
+      .filter({ hasText: policyGallery.title ?? policyFolder })
+      .getByRole('button')
+      .click()
+    await page.getByRole('button', { name: 'Previous slide', exact: true }).click()
+
+    const video = page.locator('.gallery-video')
+    await expect(video).toHaveAttribute('controls', '')
+    await expect(page.getByRole('status')).toContainText('Autoplay was blocked')
+    await expect(page.getByRole('alert')).toHaveCount(0)
+    expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true)
+
+    await page.evaluate(() => {
+      ;(window as Window & { __allowGalleryVideoPlay?: boolean }).__allowGalleryVideoPlay = true
+    })
+    await video.evaluate((element: HTMLVideoElement) => element.play())
+    await expect(page.getByRole('status')).toHaveCount(0)
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
+      .toBeGreaterThan(0)
+    expect(await video.evaluate((element: HTMLVideoElement) => element.muted)).toBe(true)
+  })
 }
