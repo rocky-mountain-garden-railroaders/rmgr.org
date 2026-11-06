@@ -10,7 +10,7 @@ defineOptions({ name: 'ImageGallery' })
 
 const route = useRoute()
 const isGalleryDebugEnabled = computed(() => route.query.galleryDebug === 'true')
-const activeGroupIndex = ref(0)
+const activeGroupIndex = ref<number | null>(null)
 const activeImageIndex = ref(0)
 const isLightboxOpen = ref(false)
 const { viewer, fullscreenSupported, isFullscreen, fullscreenError, toggleFullscreen } =
@@ -18,8 +18,12 @@ const { viewer, fullscreenSupported, isFullscreen, fullscreenError, toggleFullsc
 let slideshowTimer: ReturnType<typeof setTimeout> | null = null
 const slideshowDelayMs = 5000
 
-const activeGroup = computed(() => galleryGroups[activeGroupIndex.value] ?? null)
-const activeImage = computed(() => activeGroup.value?.images[activeImageIndex.value] ?? null)
+const activeGroup = computed(() =>
+  activeGroupIndex.value === null ? null : (galleryGroups[activeGroupIndex.value] ?? null),
+)
+const activeImage = computed(() =>
+  isLightboxOpen.value ? (activeGroup.value?.images[activeImageIndex.value] ?? null) : null,
+)
 const { imageStyle, isZoomed, onWheel, updateOrigin } = useImageZoom(
   computed(() => isLightboxOpen.value && isFullscreen.value),
   () => activeImage.value?.src,
@@ -138,7 +142,8 @@ onUnmounted(() => {
               <td v-for="(group, columnIndex) in row" :key="group.title" class="gallery-cell">
                 <GallerySection
                   :description="group.description"
-                  :images="group.images"
+                  :cover="group.images[0]"
+                  :image-count="group.images.length"
                   :title="group.title"
                   @open-image="
                     openLightbox(rowIndex * (isMobileView ? 1 : 3) + columnIndex, $event)
@@ -183,11 +188,13 @@ onUnmounted(() => {
                 @mousemove="updateOrigin"
               >
                 <v-img
+                  :key="activeImage.src"
                   :alt="activeImage.alt"
                   :src="activeImage.src"
                   :style="imageStyle"
                   class="bg-black"
                   contain
+                  eager
                   max-height="75vh"
                 />
               </div>
