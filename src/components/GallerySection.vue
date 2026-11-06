@@ -1,20 +1,17 @@
 <script setup lang="ts">
-type GalleryImage = {
-  src: string
-  alt: string
-  caption: string
-}
+import type { GalleryImage } from '@/utils/galleryImages'
 
 defineOptions({ name: 'GallerySection' })
 
 withDefaults(
   defineProps<{
     title: string
-    cover: GalleryImage
-    imageCount: number
+    cover?: GalleryImage
+    mediaCount: number
+    videoCount?: number
     description?: string
   }>(),
-  { description: '' },
+  { description: '', videoCount: 0 },
 )
 
 const emit = defineEmits<{
@@ -24,9 +21,26 @@ const emit = defineEmits<{
 
 <template>
   <v-card class="gallery-section h-100 d-flex flex-column" color="transparent" flat>
-    <v-card class="image-shell overflow-hidden bg-surface rounded-lg elevation-3 w-100 d-flex flex-column flex-grow-1" flat hover>
-      <button class="image-hit-area" type="button" :title="`View ${title} gallery (${imageCount} photo${imageCount === 1 ? '' : 's'})`" @click="emit('openImage', 0)">
-        <v-img :alt="cover.alt" :aspect-ratio="4 / 3" :src="cover.src" :eager="false" class="bg-grey-lighten-2" cover>
+    <v-card
+      class="image-shell overflow-hidden bg-surface rounded-lg elevation-3 w-100 d-flex flex-column flex-grow-1"
+      flat
+      hover
+    >
+      <button
+        class="image-hit-area"
+        type="button"
+        :title="`View ${title} gallery (${mediaCount} ${videoCount ? 'item' : 'photo'}${mediaCount === 1 ? '' : 's'}${videoCount ? `, ${videoCount} video${videoCount === 1 ? '' : 's'}` : ''})`"
+        @click="emit('openImage', 0)"
+      >
+        <v-img
+          v-if="cover"
+          :alt="cover.alt"
+          :aspect-ratio="4 / 3"
+          :src="cover.src"
+          :eager="false"
+          class="bg-grey-lighten-2"
+          cover
+        >
           <template #placeholder>
             <v-row align="center" class="fill-height ma-0" justify="center">
               <v-progress-circular color="primary" indeterminate />
@@ -42,6 +56,11 @@ const emit = defineEmits<{
             </span>
           </div>
         </v-img>
+        <div v-else class="video-gallery-cover bg-grey-darken-3 text-white">
+          <v-icon icon="mdi-video" aria-hidden="true" size="48" />
+          <span class="text-title-large font-weight-bold">{{ title }}</span>
+          <span v-if="description">{{ description }}</span>
+        </div>
       </button>
     </v-card>
   </v-card>
@@ -69,4 +88,13 @@ const emit = defineEmits<{
   background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.7));
 }
 
+.video-gallery-cover {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+}
 </style>

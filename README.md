@@ -57,8 +57,27 @@ These covers (the first photo in each gallery) are the only photos requested
 before a gallery is selected. Opening a gallery mounts just its current slide;
 the remaining photos load one at a time through navigation or the existing
 five-second slideshow. Pause the slideshow to stop automatic photo downloads.
-Closing the viewer removes its image and stops the slideshow. Gallery imports
-contain asset URLs, not inlined photo data.
+Closing the viewer removes its media and stops the slideshow. Gallery imports
+contain asset URLs, not inlined photo or video data.
+
+MP4 files in published gallery folders appear after the photos, preserving the
+featured cover and curated photo order. When a selected slideshow reaches a video,
+it attempts muted inline autoplay, with native controls to play and unmute. If
+browser policy blocks autoplay, a prompt directs the user to the native Play
+control. Videos use `preload="none"` and are not mounted or requested for
+unselected galleries. Reaching a video pauses the slideshow; navigate to a photo
+and use Play slideshow to resume. Navigating away or closing stops playback.
+Videos fit the normal and fullscreen viewer without image zoom. MP4 is a
+container, not a codec guarantee; use H.264 video with AAC audio for broad browser
+support. A direct MP4 link and a playback error message are provided for failures.
+The gallery manifest lists 14 tracked, web-encoded MP4s: seven in Siwy, five in
+Mayhew, and two in Zoo Lights 2025. These copies use H.264/AAC, faststart, and at
+most 1280x720 (720x1280 portrait) without upscaling; they total 194,311,953 bytes.
+Keep original camera files outside the site assets. A clean checkout must contain
+all 14 manifest-listed videos for the gallery tests and build to match this
+workspace.
+The bucket manifest helper also recognizes MP4s, but
+the current app imports local assets; that helper is not a remote-video loader.
 
 Embedded photos open in a full-window image viewer. Where the browser supports
 fullscreen, embedded photo viewers and expanded galleries include a fullscreen
@@ -75,7 +94,11 @@ each photo, including photos without captions. Remove the flag to hide filenames
 they are hidden by default.
 
 `src/assets/images/galleries/galleries.json` lists the supported photos in each
-gallery subfolder. Keep these entries in sync with the files on disk; omit videos.
+gallery subfolder. Keep these photo entries in sync with the files on disk.
+MP4s are discovered automatically; list published compressed copies with their alt
+text and optional captions under their filenames in the existing `images` metadata
+map, after the photos. File extensions produce the typed image/video model used by
+the slideshow; videos are never passed to image components.
 Only folders listed in the manifest are published. Omit a gallery entry to keep
 it unpublished without deleting its photos; Supertrain 2026 is currently omitted
 until more photos are available.
@@ -114,6 +137,11 @@ pnpm run test:e2e tests/example.spec.ts
 # Runs the tests in debug mode
 pnpm run test:e2e --debug
 ```
+
+`e2e/gallery-video.spec.ts` exercises the manifest-listed mixed galleries with
+actual compressed MP4s: discovery, playback, fullscreen, navigation, closing,
+and network gating at desktop and mobile viewport sizes. Rebuild before testing
+the production preview so it includes the current video assets.
 
 ### Pull request checks
 

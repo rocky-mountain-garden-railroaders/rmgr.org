@@ -1,8 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import GallerySection from '@/components/GallerySection.vue'
+import type { GalleryImage } from '@/utils/galleryImages'
 
 const stubs = {
+  'v-icon': { template: '<i />' },
   'v-card': { template: '<div><slot /></div>' },
   'v-card-title': { template: '<div><slot /></div>' },
   'v-card-text': { template: '<div><slot /></div>' },
@@ -12,18 +14,38 @@ const stubs = {
   'v-row': { template: '<div><slot /></div>' },
 }
 
-const images = [
-  { src: '/one.jpg', alt: 'Club members operating the modular layout', caption: 'First' },
-  { src: '/two.jpg', alt: 'A live steam locomotive at the station', caption: 'Second' },
+const images: GalleryImage[] = [
+  {
+    kind: 'image',
+    fileName: 'one.jpg',
+    src: '/one.jpg',
+    alt: 'Club members operating the modular layout',
+    caption: 'First',
+  },
+  {
+    kind: 'image',
+    fileName: 'two.jpg',
+    src: '/two.jpg',
+    alt: 'A live steam locomotive at the station',
+    caption: 'Second',
+  },
 ]
 
 const mountSection = (props: Record<string, unknown> = {}) =>
   mount(GallerySection, {
-    props: { title: 'Featured Layouts', cover: images[0], imageCount: images.length, ...props },
+    props: { title: 'Featured Layouts', cover: images[0], mediaCount: images.length, ...props },
     global: { stubs },
   })
 
-describe('GallerySection', () => {
+describe('GIVEN gallery-section props WHEN rendering THEN', () => {
+  it('GIVEN a video-only gallery WHEN rendering THEN its cover does not mount or request video media', () => {
+    const wrapper = mountSection({ cover: undefined, mediaCount: 2, videoCount: 2 })
+    expect(wrapper.findAll('[src]')).toHaveLength(0)
+    expect(wrapper.find('video').exists()).toBe(false)
+    expect(wrapper.find('.video-gallery-cover').text()).toContain('Featured Layouts')
+    expect(wrapper.find('button').attributes('title')).toContain('2 videos')
+  })
+
   it('GIVEN a gallery image WHEN clicked THEN it emits the selected image index', async () => {
     const wrapper = mountSection()
 
@@ -38,7 +60,7 @@ describe('GallerySection', () => {
     expect(wrapper.find('[src]').attributes('alt')).toBe(images[0].alt)
   })
 
-  it('only exposes the lazy cover, not the gallery photo collection', () => {
+  it('GIVEN a gallery with photos WHEN rendered THEN only its lazy cover is exposed', () => {
     const wrapper = mountSection()
 
     expect(wrapper.findAll('[src]')).toHaveLength(1)
@@ -59,7 +81,7 @@ describe('GallerySection', () => {
     expect(wrapper.find('.image-title-overlay').text()).toBe('Featured Layouts')
   })
 
-  it('GIVEN a gallery with multiple images WHEN rendering THEN the hit area has a hover hint naming the gallery and photo count', () => {
+  it('GIVEN a gallery with multiple photos WHEN rendering THEN the hit area names the gallery and photo count', () => {
     const wrapper = mountSection()
 
     expect(wrapper.find('button.image-hit-area').attributes('title')).toBe(
