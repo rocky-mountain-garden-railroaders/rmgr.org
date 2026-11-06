@@ -34,6 +34,8 @@ const metadataByFolder: GalleryMetadata =
 const imageModules = import.meta.glob('../assets/images/galleries/**/*.{jpg,jpeg,png,webp,gif}', {
   eager: true,
   import: 'default',
+  // Import URLs only, including for small photos that Vite would otherwise inline.
+  query: '?url&no-inline',
 })
 
 const GALLERIES_SEGMENT = 'galleries'
