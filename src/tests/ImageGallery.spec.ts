@@ -109,6 +109,32 @@ describe('ImageGallery', () => {
     vi.restoreAllMocks()
   })
 
+  it.each([false, true])(
+    'mounts only covers until selection, then only the current slide (mobile=%s)',
+    async (isMobile) => {
+      const wrapper = await mountGallery(isMobile)
+      const coverSources = galleryGroups.map((group) => group.images[0].src)
+      const sources = () => wrapper.findAll('[src]').map((image) => image.attributes('src'))
+
+      expect(sources()).toEqual(coverSources)
+      expect(wrapper.find('.modal-image-shell').exists()).toBe(false)
+
+      await wrapper.findAll('button.image-hit-area')[1].trigger('click')
+      expect(sources()).toEqual([...coverSources, galleryGroups[1].images[0].src])
+      expect(wrapper.find('.modal-image-shell [src]').attributes('eager')).toBeDefined()
+
+      await wrapper.find('[aria-label="Next image"]').trigger('click')
+      expect(sources()).toEqual([...coverSources, galleryGroups[1].images[1].src])
+
+      await wrapper.find('[aria-label="Close image viewer"]').trigger('click')
+      expect(sources()).toEqual(coverSources)
+      expect(wrapper.find('.modal-image-shell').exists()).toBe(false)
+
+      await wrapper.findAll('button.image-hit-area')[2].trigger('click')
+      expect(sources()).toEqual([...coverSources, galleryGroups[2].images[0].src])
+    },
+  )
+
   it('keeps gallery navigation available in fullscreen and exits fullscreen on close', async () => {
     let fullscreenElement: Element | null = null
     let fullscreenRequestTarget: HTMLElement | null = null

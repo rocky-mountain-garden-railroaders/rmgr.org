@@ -19,7 +19,7 @@ const images = [
 
 const mountSection = (props: Record<string, unknown> = {}) =>
   mount(GallerySection, {
-    props: { title: 'Featured Layouts', images, ...props },
+    props: { title: 'Featured Layouts', cover: images[0], imageCount: images.length, ...props },
     global: { stubs },
   })
 
@@ -36,6 +36,15 @@ describe('GallerySection', () => {
     const wrapper = mountSection()
 
     expect(wrapper.find('[src]').attributes('alt')).toBe(images[0].alt)
+  })
+
+  it('only exposes the lazy cover, not the gallery photo collection', () => {
+    const wrapper = mountSection()
+
+    expect(wrapper.findAll('[src]')).toHaveLength(1)
+    expect(wrapper.find('[src]').attributes('src')).toBe(images[0].src)
+    expect(wrapper.find('[src]').attributes('eager')).toBe('false')
+    expect(wrapper.html()).not.toContain(images[1].src)
   })
 
   it('GIVEN a description WHEN rendering THEN it is shown beneath the title', () => {
