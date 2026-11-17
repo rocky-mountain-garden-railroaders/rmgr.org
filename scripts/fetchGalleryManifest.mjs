@@ -6,11 +6,11 @@ const outputPath = join(scriptsDir, '..', 'src', 'generated', 'galleryManifest.j
 const metadataPath = join(scriptsDir, '..', 'src', 'assets', 'images', 'galleries', 'galleries.json')
 
 const DEFAULT_BUCKET = 'rmgr-photos'
-const IMAGE_EXTENSION = /\.(jpe?g|png|webp|gif|avif)$/i
+const MEDIA_EXTENSION = /\.(jpe?g|png|webp|gif|avif|mp4)$/i
 
 /**
  * Groups bucket object names ("Folder/file.jpg") into galleries. Only objects exactly
- * one folder deep become gallery images; anything else is reported and skipped so a
+ * one folder deep become gallery media; anything else is reported and skipped so a
  * stray upload cannot create a broken gallery.
  */
 export const buildManifest = (objectNames) => {
@@ -21,7 +21,7 @@ export const buildManifest = (objectNames) => {
     if (name.endsWith('/')) continue
 
     const segments = name.split('/')
-    if (segments.length !== 2 || !segments[0] || !IMAGE_EXTENSION.test(segments[1])) {
+    if (segments.length !== 2 || !segments[0] || !MEDIA_EXTENSION.test(segments[1])) {
       skipped.push(name)
       continue
     }
@@ -103,13 +103,13 @@ export const run = async ({
   const { manifest, skipped } = buildManifest(names)
 
   for (const name of skipped) {
-    console.warn(`Skipping gs://${bucket}/${name}: gallery images must be "<folder>/<image>".`)
+    console.warn(`Skipping gs://${bucket}/${name}: gallery media must be "<folder>/<image-or-mp4>".`)
   }
 
-  const imageCount = Object.values(manifest.galleries).reduce((total, files) => total + files.length, 0)
+  const mediaCount = Object.values(manifest.galleries).reduce((total, files) => total + files.length, 0)
   // Publishing an empty manifest would silently wipe every gallery from the live site.
-  if (imageCount === 0) {
-    throw new Error(`No gallery images found in gs://${bucket}; refusing to publish an empty gallery.`)
+  if (mediaCount === 0) {
+    throw new Error(`No gallery media found in gs://${bucket}; refusing to publish an empty gallery.`)
   }
 
   for (const orphan of findOrphanedMetadata(manifest, await readMetadata(sourceMetadataPath))) {
@@ -119,7 +119,7 @@ export const run = async ({
   await mkdir(dirname(destPath), { recursive: true })
   await writeFile(destPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf-8')
   console.log(
-    `Wrote ${imageCount} images in ${Object.keys(manifest.galleries).length} galleries to ${destPath}`,
+    `Wrote ${mediaCount} media files in ${Object.keys(manifest.galleries).length} galleries to ${destPath}`,
   )
 }
 

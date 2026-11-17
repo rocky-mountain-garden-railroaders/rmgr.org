@@ -28,8 +28,6 @@ coverage
 *.sw?
 
 *.tsbuildinfo
-*.mp4
-
 /public/calendar-ics
 
 test-results/
