@@ -18,7 +18,12 @@ for (const viewport of [
       }) => {
         const videoRequests: string[] = []
         page.on('request', (request) => {
-          if (/\.mp4(?:\?|$)/i.test(request.url())) videoRequests.push(request.url())
+          if (
+            ['media', 'other'].includes(request.resourceType()) &&
+            /\.mp4(?:\?|$)/i.test(request.url())
+          ) {
+            videoRequests.push(request.url())
+          }
         })
 
         await page.goto('/gallery?galleryDebug=true')
