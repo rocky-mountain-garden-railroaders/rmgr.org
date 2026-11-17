@@ -232,7 +232,7 @@ describe('GIVEN gallery state WHEN rendering or interacting THEN', () => {
     expect(wrapper.find('[role="status"]').exists()).toBe(false)
   })
 
-  it('GIVEN the viewer is fullscreen WHEN navigating and closing THEN controls remain available and fullscreen exits', async () => {
+  it('GIVEN gallery media is fullscreen WHEN navigating THEN image zoom and video playback work', async () => {
     let fullscreenElement: Element | null = null
     let fullscreenRequestTarget: HTMLElement | null = null
     const originalEnabled = Object.getOwnPropertyDescriptor(document, 'fullscreenEnabled')
@@ -256,6 +256,8 @@ describe('GIVEN gallery state WHEN rendering or interacting THEN', () => {
       value: async () => {
         if (!fullscreenRequestTarget) throw new Error('No fullscreen request target was configured')
         fullscreenElement = fullscreenRequestTarget
+        const video = fullscreenRequestTarget.querySelector('video')
+        if (video) Object.defineProperty(video, 'paused', { configurable: true, value: true })
         document.dispatchEvent(new Event('fullscreenchange'))
       },
     })
@@ -277,9 +279,33 @@ describe('GIVEN gallery state WHEN rendering or interacting THEN', () => {
       expect(wrapper.find('.modal-image-shell [src]').attributes('src')).toBe('/gallery-1-b.jpg')
       expect(wrapper.find('.modal-image-viewport').classes()).not.toContain('is-zoomed')
       expect(wrapper.find('[aria-label="Play slideshow"]').exists()).toBe(true)
+
       await wrapper.find('[aria-label="Close gallery viewer"]').trigger('click')
       await flushPromises()
       expect(exit).toHaveBeenCalledOnce()
+
+      await wrapper.findAll('button.image-hit-area')[4].trigger('click')
+      await wrapper.find('[aria-label="Previous slide"]').trigger('click')
+      await flushPromises()
+      const video = wrapper.find<HTMLVideoElement>('video')
+      expect(video.exists()).toBe(true)
+      expect(video.element.play).toHaveBeenCalledOnce()
+      Object.defineProperty(video.element, 'paused', { configurable: true, value: false })
+      video.element.muted = false
+      vi.mocked(video.element.play).mockImplementation(() => {
+        Object.defineProperty(video.element, 'paused', { configurable: true, value: false })
+        return Promise.resolve()
+      })
+      fullscreenRequestTarget = wrapper.find<HTMLElement>('.gallery-fullscreen-viewer').element
+      await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
+      await flushPromises()
+      expect(video.element.paused).toBe(false)
+      expect(video.element.muted).toBe(false)
+      expect(video.element.play).toHaveBeenCalledTimes(2)
+
+      await wrapper.find('[aria-label="Close gallery viewer"]').trigger('click')
+      await flushPromises()
+      expect(exit).toHaveBeenCalledTimes(2)
       wrapper.unmount()
     } finally {
       for (const [target, key, descriptor] of [

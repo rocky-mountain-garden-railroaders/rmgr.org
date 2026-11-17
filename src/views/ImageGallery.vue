@@ -38,6 +38,19 @@ const isSlideshowPaused = ref(false)
 const activeVideo = ref<HTMLVideoElement | null>(null)
 const videoError = ref('')
 const videoAutoplayBlocked = ref(false)
+const attemptVideoPlayback = (
+  media: NonNullable<typeof activeMedia.value>,
+  video: HTMLVideoElement,
+  mute = true,
+) => {
+  if (mute) video.muted = true
+  video.play().catch(() => {
+    if (activeMedia.value === media && isLightboxOpen.value && activeVideo.value === video) {
+      videoAutoplayBlocked.value = true
+    }
+  })
+}
+
 watch(
   activeMedia,
   (media) => {
@@ -54,15 +67,26 @@ watch(
     const video = activeVideo.value
     if (!isOpen || media?.kind !== 'video' || !video) return
 
-    video.muted = true
-    video.play().catch(() => {
-      if (activeMedia.value === media && isLightboxOpen.value && activeVideo.value === video) {
-        videoAutoplayBlocked.value = true
-      }
-    })
+    attemptVideoPlayback(media, video)
   },
   { flush: 'post' },
 )
+const toggleGalleryFullscreen = async () => {
+  const media = activeMedia.value
+  const video = activeVideo.value
+  const wasPlaying = video !== null && !video.paused
+  await toggleFullscreen()
+
+  if (
+    wasPlaying &&
+    isFullscreen.value &&
+    isLightboxOpen.value &&
+    media?.kind === 'video' &&
+    activeVideo.value === video
+  ) {
+    attemptVideoPlayback(media, video, false)
+  }
+}
 watch(isZoomed, (zoomed) => {
   if (zoomed) isSlideshowPaused.value = true
 })
@@ -213,7 +237,7 @@ onUnmounted(() => {
                 :aria-pressed="isFullscreen"
                 color="white"
                 variant="text"
-                @click="toggleFullscreen"
+                @click="toggleGalleryFullscreen"
               />
               <div
                 v-if="activeMedia.kind === 'image'"
