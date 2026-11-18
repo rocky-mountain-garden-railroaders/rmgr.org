@@ -111,7 +111,7 @@ for (const width of [1440, 390]) {
       await expect(card).toHaveCSS('color', 'rgb(30, 28, 15)')
       await expect(card).toHaveCSS('padding', '0px')
       await expect(card.locator('.text-on-surface')).toHaveCSS('color', 'rgb(30, 28, 15)')
-      await expect(card.locator('.text-secondary')).toHaveCSS('color', 'rgb(183, 140, 41)')
+      await expect(card.locator('.mdi-open-in-new')).toHaveCount(0)
     }
 
     await cards.first().hover()
