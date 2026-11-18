@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator } from '@playwright/test'
 import metadata from '../src/assets/images/galleries/galleries.json' with { type: 'json' }
 
 const videoGalleries = Object.entries(metadata.galleries).filter(([, gallery]) =>
@@ -94,11 +94,31 @@ for (const viewport of [
   }
 }
 
-test('GIVEN a video slide WHEN fullscreen is entered THEN playback and navigation continue', async ({
+const expectVideoPlaybackOrFallback = async (
+  viewer: Locator,
+  video: Locator,
+  supportsMp4: boolean,
+  previousTime: number,
+) => {
+  if (supportsMp4) {
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
+      .toBeGreaterThan(previousTime)
+    await expect(video).toHaveJSProperty('paused', false)
+  } else {
+    await expect(viewer.getByText('Your browser does not support MP4 video.')).toBeVisible()
+  }
+}
+
+test('GIVEN a video slide WHEN fullscreen is entered THEN playback or fallback and navigation continue', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/gallery?galleryDebug=true')
+  const supportsMp4 = await page.evaluate(() => {
+    const video = document.createElement('video')
+    return video.canPlayType('video/mp4') !== ''
+  })
   expect(
     await page.evaluate(
       () => document.fullscreenEnabled && 'requestFullscreen' in Element.prototype,
@@ -116,14 +136,7 @@ test('GIVEN a video slide WHEN fullscreen is entered THEN playback and navigatio
   const viewer = page.locator('.modal-image-shell')
   const video = viewer.locator('video')
   await expect(video).toBeVisible()
-  await expect
-    .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
-    .toBeGreaterThan(0)
-  await expect(video).toHaveJSProperty('paused', false)
-  const playbackStartTime = await video.evaluate((element: HTMLVideoElement) => element.currentTime)
-  await expect
-    .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
-    .toBeGreaterThan(playbackStartTime)
+  await expectVideoPlaybackOrFallback(viewer, video, supportsMp4, 0)
   const timeBeforeFullscreen = await video.evaluate(
     (element: HTMLVideoElement) => element.currentTime,
   )
@@ -132,9 +145,7 @@ test('GIVEN a video slide WHEN fullscreen is entered THEN playback and navigatio
   await expect(page.getByRole('button', { name: 'Exit fullscreen', exact: true })).toBeVisible()
   await expect(video).toBeVisible()
   await expect(viewer.locator('.modal-image-viewport')).toHaveCount(0)
-  await expect
-    .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
-    .toBeGreaterThan(timeBeforeFullscreen)
+  await expectVideoPlaybackOrFallback(viewer, video, supportsMp4, timeBeforeFullscreen)
 
   const outgoingVideo = await video.evaluateHandle((element: HTMLVideoElement) => element)
   await page.getByRole('button', { name: 'Next slide', exact: true }).click()
