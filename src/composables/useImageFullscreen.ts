@@ -24,6 +24,7 @@ export const useImageFullscreen = (isOpen: Ref<boolean>) => {
       } else {
         await viewer.value?.requestFullscreen()
       }
+      updateFullscreen()
     } catch {
       fullscreenError.value = 'Unable to change fullscreen mode. Please try again.'
     }

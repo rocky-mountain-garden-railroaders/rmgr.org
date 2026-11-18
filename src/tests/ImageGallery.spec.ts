@@ -258,7 +258,6 @@ describe('GIVEN gallery state WHEN rendering or interacting THEN', () => {
         fullscreenElement = fullscreenRequestTarget
         const video = fullscreenRequestTarget.querySelector('video')
         if (video) Object.defineProperty(video, 'paused', { configurable: true, value: true })
-        document.dispatchEvent(new Event('fullscreenchange'))
       },
     })
     Object.defineProperty(document, 'exitFullscreen', { configurable: true, value: exit })
