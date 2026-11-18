@@ -255,9 +255,13 @@ describe('GIVEN gallery state WHEN rendering or interacting THEN', () => {
       configurable: true,
       value: async () => {
         if (!fullscreenRequestTarget) throw new Error('No fullscreen request target was configured')
-        fullscreenElement = fullscreenRequestTarget
-        const video = fullscreenRequestTarget.querySelector('video')
-        if (video) Object.defineProperty(video, 'paused', { configurable: true, value: true })
+        const target = fullscreenRequestTarget
+        setTimeout(() => {
+          fullscreenElement = target
+          const video = target.querySelector('video')
+          if (video) Object.defineProperty(video, 'paused', { configurable: true, value: true })
+          document.dispatchEvent(new Event('fullscreenchange'))
+        }, 0)
       },
     })
     Object.defineProperty(document, 'exitFullscreen', { configurable: true, value: exit })
@@ -268,6 +272,7 @@ describe('GIVEN gallery state WHEN rendering or interacting THEN', () => {
       await wrapper.find('.modal-image-viewport').trigger('wheel', { deltaY: -100 })
       expect(wrapper.find('.modal-image-viewport').classes()).not.toContain('is-zoomed')
       await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
+      await new Promise((resolve) => setTimeout(resolve, 0))
       await flushPromises()
       expect(fullscreenElement).toBe(wrapper.find('.gallery-fullscreen-viewer').element)
       expect(wrapper.find('[aria-label="Exit fullscreen"]').exists()).toBe(true)
@@ -297,6 +302,7 @@ describe('GIVEN gallery state WHEN rendering or interacting THEN', () => {
       })
       fullscreenRequestTarget = wrapper.find<HTMLElement>('.gallery-fullscreen-viewer').element
       await wrapper.find('[aria-label="Enter fullscreen"]').trigger('click')
+      await new Promise((resolve) => setTimeout(resolve, 0))
       await flushPromises()
       expect(video.element.paused).toBe(false)
       expect(video.element.muted).toBe(false)

@@ -10,6 +10,22 @@ export const useImageFullscreen = (isOpen: Ref<boolean>) => {
     isFullscreen.value = document.fullscreenElement === viewer.value && viewer.value !== null
   }
 
+  const waitForFullscreenChange = () => {
+    let resolveChange: (() => void) | null = null
+    const changed = new Promise<void>((resolve) => {
+      resolveChange = resolve
+    })
+    const onFullscreenChange = () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange)
+      resolveChange?.()
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return {
+      changed,
+      cancel: () => document.removeEventListener('fullscreenchange', onFullscreenChange),
+    }
+  }
+
   const exitFullscreen = async () => {
     if (viewer.value && document.fullscreenElement === viewer.value) {
       await document.exitFullscreen()
@@ -18,15 +34,22 @@ export const useImageFullscreen = (isOpen: Ref<boolean>) => {
 
   const toggleFullscreen = async () => {
     fullscreenError.value = ''
+    const previousFullscreenElement = document.fullscreenElement
+    const fullscreenChange = waitForFullscreenChange()
     try {
       if (isFullscreen.value) {
         await exitFullscreen()
       } else {
         await viewer.value?.requestFullscreen()
       }
+      if (viewer.value && document.fullscreenElement === previousFullscreenElement) {
+        await fullscreenChange.changed
+      }
       updateFullscreen()
     } catch {
       fullscreenError.value = 'Unable to change fullscreen mode. Please try again.'
+    } finally {
+      fullscreenChange.cancel()
     }
   }
 
