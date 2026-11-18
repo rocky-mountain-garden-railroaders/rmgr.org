@@ -119,6 +119,7 @@ test('GIVEN a video slide WHEN fullscreen is entered THEN playback and navigatio
   await expect
     .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
     .toBeGreaterThan(0)
+  await expect(video).toHaveJSProperty('paused', false)
   const timeBeforeFullscreen = await video.evaluate(
     (element: HTMLVideoElement) => element.currentTime,
   )
