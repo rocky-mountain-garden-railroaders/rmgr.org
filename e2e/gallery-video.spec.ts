@@ -117,7 +117,7 @@ test('GIVEN a video slide WHEN fullscreen is entered THEN playback or fallback a
   await page.goto('/gallery?galleryDebug=true')
   const supportsMp4 = await page.evaluate(() => {
     const video = document.createElement('video')
-    return video.canPlayType('video/mp4') !== ''
+    return video.canPlayType('video/mp4; codecs="avc1.640029"') !== ''
   })
   expect(
     await page.evaluate(
