@@ -39,7 +39,6 @@
                       {{ item.description }}
                     </div>
                   </div>
-                  <v-icon class="text-secondary" icon="mdi-open-in-new" size="20"></v-icon>
                 </v-card-text>
               </v-card>
             </v-col>

@@ -15,7 +15,7 @@ export const resourcesSections: ResourceSection[] = [
     items: [
       {
         title: 'Zoo Lights',
-        description: 'An annual holiday light festival hosted by the Calgary Zoo in Calgary, Alberta. The RMGR is builds a layout in the conservatory.',
+        description: 'An annual holiday light festival hosted by the Calgary Zoo in Calgary, Alberta. The RMGR builds a layout in the conservatory.',
         href: 'https://www.calgaryzoo.com/zoo-lights',
       },
       {

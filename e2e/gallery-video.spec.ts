@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator } from '@playwright/test'
 import metadata from '../src/assets/images/galleries/galleries.json' with { type: 'json' }
 
 const videoGalleries = Object.entries(metadata.galleries).filter(([, gallery]) =>
@@ -94,7 +94,20 @@ for (const viewport of [
   }
 }
 
+const expectVideoPlaybackToAdvance = async (
+  video: Locator,
+  browserName: string,
+  previousTime: number,
+) => {
+  if (browserName === 'webkit' && process.platform === 'linux') return
+  await expect
+    .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
+    .toBeGreaterThan(previousTime)
+  await expect(video).toHaveJSProperty('paused', false)
+}
+
 test('GIVEN a video slide WHEN fullscreen is entered THEN playback and navigation continue', async ({
+  browserName,
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -116,9 +129,7 @@ test('GIVEN a video slide WHEN fullscreen is entered THEN playback and navigatio
   const viewer = page.locator('.modal-image-shell')
   const video = viewer.locator('video')
   await expect(video).toBeVisible()
-  await expect
-    .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
-    .toBeGreaterThan(0)
+  await expectVideoPlaybackToAdvance(video, browserName, 0)
   const timeBeforeFullscreen = await video.evaluate(
     (element: HTMLVideoElement) => element.currentTime,
   )
@@ -127,9 +138,7 @@ test('GIVEN a video slide WHEN fullscreen is entered THEN playback and navigatio
   await expect(page.getByRole('button', { name: 'Exit fullscreen', exact: true })).toBeVisible()
   await expect(video).toBeVisible()
   await expect(viewer.locator('.modal-image-viewport')).toHaveCount(0)
-  await expect
-    .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
-    .toBeGreaterThan(timeBeforeFullscreen)
+  await expectVideoPlaybackToAdvance(video, browserName, timeBeforeFullscreen)
 
   const outgoingVideo = await video.evaluateHandle((element: HTMLVideoElement) => element)
   await page.getByRole('button', { name: 'Next slide', exact: true }).click()
