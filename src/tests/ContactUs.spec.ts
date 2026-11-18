@@ -1,7 +1,18 @@
-import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createVuetify } from 'vuetify'
+import { VForm, VSelect, VTextarea, VTextField } from 'vuetify/components'
 import ContactUs from '../views/ContactUs.vue'
+
+enableAutoUnmount(afterEach)
+
+const mountContactUs = () =>
+  mount(ContactUs, {
+    global: {
+      plugins: [createVuetify({ components: { VForm, VSelect, VTextarea, VTextField } })],
+    },
+  })
 
 describe('ContactUs', () => {
   beforeEach(() => {
@@ -15,7 +26,7 @@ describe('ContactUs', () => {
     } as Response)
     const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>
 
-    const wrapper = mount(ContactUs)
+    const wrapper = mountContactUs()
 
     const vm = wrapper.vm as unknown as {
       formData: { name: string; email: string; subject: string | null; message: string }
@@ -27,10 +38,11 @@ describe('ContactUs', () => {
     vm.formData.email = 'tyler@example.com'
     vm.formData.subject = 'General Inquiry'
     vm.formData.message = 'I would like more information about the club.'
+    await flushPromises()
     vm.isFormValid = true
 
     await (wrapper.vm as unknown as { handleSubmit: () => Promise<void> }).handleSubmit()
-    await nextTick()
+    await flushPromises()
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       'https://formspree.io/f/xrpbgrek',
@@ -56,16 +68,14 @@ describe('ContactUs', () => {
       }),
     )
     expect(vm.showSnackbar).toBe(true)
-    expect(vm.formData).toMatchObject({
-      name: '',
-      email: '',
-      subject: null,
-      message: '',
-    })
+    expect(wrapper.findComponent(VTextField).find('input').element.value).toBe('')
+    expect(wrapper.findComponent(VTextarea).find('textarea').element.value).toBe('')
+    expect(wrapper.findComponent(VSelect).props('modelValue')).toBeNull()
+    expect(wrapper.findAllComponents(VTextField).every((field) => !field.props('modelValue'))).toBe(true)
   })
 
   it('GIVEN the form is invalid WHEN submitted THEN it does not show the snackbar', async () => {
-    const wrapper = mount(ContactUs)
+    const wrapper = mountContactUs()
 
     const vm = wrapper.vm as unknown as {
       isFormValid: boolean
@@ -87,7 +97,7 @@ describe('ContactUs', () => {
       json: async () => ({}),
     } as Response)
 
-    const wrapper = mount(ContactUs)
+    const wrapper = mountContactUs()
 
     const vm = wrapper.vm as unknown as {
       formData: { name: string; email: string; subject: string | null; message: string }
@@ -101,6 +111,7 @@ describe('ContactUs', () => {
     vm.formData.email = 'tyler@example.com'
     vm.formData.subject = 'General Inquiry'
     vm.formData.message = 'I would like more information about the club.'
+    await flushPromises()
     vm.isFormValid = true
 
     await vm.handleSubmit()

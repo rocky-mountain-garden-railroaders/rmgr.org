@@ -20,6 +20,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
     - name: Checkout
@@ -33,15 +34,49 @@ jobs:
         restore-keys: |
           calendar-ics-
 
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: '24'
+        cache: 'pnpm'
+        cache-dependency-path: pnpm-lock.yaml
+
     - name: Install dependencies
-      run: npm install
+      run: pnpm install --frozen-lockfile
 
     - name: Build site
-      run: npm run build
+      id: build_site
+      run: pnpm run build
+
+    - name: Install Playwright browsers
+      if: github.event_name == 'pull_request'
+      id: browsers
+      run: pnpm exec playwright install --with-deps chromium firefox webkit
+
+    - name: Run unit tests
+      if: github.event_name == 'pull_request'
+      run: pnpm run test:unit --run
+
+    - name: Run end-to-end tests
+      if: ${{ !cancelled() && github.event_name == 'pull_request' && steps.build_site.outcome == 'success' && steps.browsers.outcome == 'success' }}
+      run: pnpm run test:e2e
+
+    - name: Upload Playwright results
+      if: ${{ !cancelled() && github.event_name == 'pull_request' && steps.browsers.outcome == 'success' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: playwright-results
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
 
     - name: Check lint
       if: github.event_name == 'pull_request'
-      run: npm run lint:check
+      run: pnpm run lint:check
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v5
@@ -84,7 +119,7 @@ jobs:
 
     steps:
     - name: Download pages artifact
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v8
       with:
         name: github-pages
 
@@ -94,7 +129,7 @@ jobs:
         tar -xf artifact.tar -C dist
 
     - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.9.0
+      uses: webfactory/ssh-agent@v0.10.0
       with:
         ssh-private-key: ${{ secrets.PROD_DEPLOY_KEY }}
 

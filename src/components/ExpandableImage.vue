@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useImageFullscreen } from '@/composables/useImageFullscreen'
+import { useImageZoom } from '@/composables/useImageZoom'
 
-defineProps<{
+const props = defineProps<{
   src: string
   alt: string
 }>()
 
 const isOpen = ref(false)
+const { viewer, fullscreenSupported, isFullscreen, fullscreenError, toggleFullscreen } =
+  useImageFullscreen(isOpen)
+const { imageStyle, isZoomed, onWheel, updateOrigin } = useImageZoom(
+  computed(() => isOpen.value && isFullscreen.value),
+  () => props.src,
+)
 </script>
 
 <template>
@@ -24,15 +32,42 @@ const isOpen = ref(false)
       </button>
     </template>
     <v-card class="image-popup" color="black" rounded="0">
-      <v-btn
-        class="image-popup-close"
-        icon="mdi-close"
-        aria-label="Close image"
-        color="white"
-        variant="text"
-        @click="isOpen = false"
-      />
-      <v-img :src="src" :alt="alt" class="image-popup-photo" height="100%" />
+      <div ref="viewer" class="image-popup-viewer">
+        <v-btn
+          v-if="fullscreenSupported"
+          class="image-popup-fullscreen"
+          :icon="isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"
+          :aria-label="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
+          :title="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
+          :aria-pressed="isFullscreen"
+          color="white"
+          variant="text"
+          @click="toggleFullscreen"
+        />
+        <v-btn
+          class="image-popup-close"
+          icon="mdi-close"
+          aria-label="Close image"
+          color="white"
+          variant="text"
+          @click="isOpen = false"
+        />
+        <div
+          class="image-popup-viewport"
+          :class="{ 'is-zoomed': isZoomed }"
+          @wheel="onWheel"
+          @mousemove="updateOrigin"
+        >
+          <v-img
+            :src="src"
+            :alt="alt"
+            :style="imageStyle"
+            class="image-popup-photo"
+            height="100%"
+          />
+        </div>
+        <p v-if="fullscreenError" role="alert" class="image-popup-error">{{ fullscreenError }}</p>
+      </div>
     </v-card>
   </v-dialog>
 </template>
@@ -56,15 +91,50 @@ const isOpen = ref(false)
   height: 100%;
 }
 
+.image-popup-viewer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: black;
+}
+
 .image-popup-photo {
   min-height: 0;
 }
 
-.image-popup-close {
+.image-popup-viewport {
+  height: 100%;
+  overflow: hidden;
+}
+
+.image-popup-viewer:fullscreen .image-popup-viewport {
+  cursor: zoom-in;
+}
+
+.image-popup-viewer:fullscreen .image-popup-viewport.is-zoomed {
+  cursor: move;
+}
+
+.image-popup-close,
+.image-popup-fullscreen {
   position: absolute;
   top: 12px;
   right: 12px;
   z-index: 1;
   background-color: rgba(0, 0, 0, 0.6);
+}
+
+.image-popup-fullscreen {
+  right: 72px;
+}
+
+.image-popup-error {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  padding: 8px;
+  color: white;
+  background: rgba(0, 0, 0, 0.8);
 }
 </style>

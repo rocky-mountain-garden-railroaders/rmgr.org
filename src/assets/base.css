@@ -51,12 +51,15 @@
   }
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  font-weight: normal;
+/* Keep the universal reset below Vuetify 4's layered components and utilities. */
+@layer vuetify-core.reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    font-weight: normal;
+  }
 }
 
 body {

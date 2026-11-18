@@ -11,7 +11,14 @@ import {
 
 const jsonResponse = (body) => ({ ok: true, status: 200, statusText: 'OK', json: async () => body })
 
-describe('buildManifest', () => {
+describe('GIVEN gallery objects WHEN building a manifest THEN', () => {
+  it('GIVEN MP4 and photo objects WHEN building THEN they are included and other video containers are skipped', () => {
+    expect(buildManifest(['Layout/train.MP4', 'Layout/cover.webp', 'Layout/raw.mov'])).toEqual({
+      manifest: { galleries: { Layout: ['cover.webp', 'train.MP4'] } },
+      skipped: ['Layout/raw.mov'],
+    })
+  })
+
   it('GIVEN folder/image objects WHEN building THEN they are grouped and sorted by folder and file', () => {
     const { manifest, skipped } = buildManifest([
       'Supertrain 2025/b.jpg',
@@ -28,7 +35,7 @@ describe('buildManifest', () => {
     expect(skipped).toEqual([])
   })
 
-  it('GIVEN folder placeholders, root files, nested paths and non-images WHEN building THEN they are left out', () => {
+  it('GIVEN placeholders, root files, nested paths, and non-images WHEN building THEN they are left out', () => {
     const { manifest, skipped } = buildManifest([
       'Supertrain 2024/',
       'loose.jpg',
@@ -46,8 +53,8 @@ describe('buildManifest', () => {
   })
 })
 
-describe('listBucketObjects', () => {
-  it('GIVEN a paginated listing WHEN listing THEN it follows every page with the bearer token', async () => {
+describe('GIVEN a bucket object listing WHEN retrieving pages THEN', () => {
+  it('GIVEN paginated results WHEN listing objects THEN every page is followed with the bearer token', async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ items: [{ name: 'A/1.jpg' }], nextPageToken: 'next' }))
@@ -64,13 +71,15 @@ describe('listBucketObjects', () => {
     expect(fetchImpl.mock.calls[1][0].searchParams.get('pageToken')).toBe('next')
   })
 
-  it('GIVEN an empty bucket page WHEN listing THEN it returns no names', async () => {
+  it('GIVEN an empty bucket page WHEN listing objects THEN it returns no names', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({}))
 
-    await expect(listBucketObjects({ bucket: 'b', accessToken: 't', fetchImpl })).resolves.toEqual([])
+    await expect(listBucketObjects({ bucket: 'b', accessToken: 't', fetchImpl })).resolves.toEqual(
+      [],
+    )
   })
 
-  it('GIVEN a permission error WHEN listing THEN it throws with the status', async () => {
+  it('GIVEN a permission error WHEN listing objects THEN it throws with the status', async () => {
     const fetchImpl = vi.fn().mockResolvedValue({
       ok: false,
       status: 403,
@@ -84,8 +93,8 @@ describe('listBucketObjects', () => {
   })
 })
 
-describe('findOrphanedMetadata', () => {
-  it('GIVEN galleries.json entries missing from the bucket WHEN checking THEN they are reported', () => {
+describe('GIVEN gallery metadata and bucket contents WHEN checked THEN', () => {
+  it('GIVEN metadata entries missing from the bucket WHEN checking THEN they are reported', () => {
     expect(
       findOrphanedMetadata(
         { galleries: { Show: ['a.jpg'] } },
@@ -95,7 +104,7 @@ describe('findOrphanedMetadata', () => {
   })
 })
 
-describe('run', () => {
+describe('GIVEN the manifest generator WHEN run THEN', () => {
   let dir
 
   beforeEach(async () => {
@@ -117,7 +126,7 @@ describe('run', () => {
     fetchImpl,
   })
 
-  it('GIVEN a bucket with images WHEN run THEN it writes the manifest', async () => {
+  it('GIVEN a bucket with images WHEN running THEN the manifest is written', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ items: [{ name: 'Show/a.jpg' }] }))
     const opts = options(fetchImpl)
 
@@ -128,14 +137,16 @@ describe('run', () => {
     })
   })
 
-  it('GIVEN no access token WHEN run THEN it fails before calling the bucket', async () => {
+  it('GIVEN no access token WHEN running THEN it fails before calling the bucket', async () => {
     const fetchImpl = vi.fn()
 
-    await expect(run({ ...options(fetchImpl), accessToken: '' })).rejects.toThrow(/GCS_ACCESS_TOKEN/)
+    await expect(run({ ...options(fetchImpl), accessToken: '' })).rejects.toThrow(
+      /GCS_ACCESS_TOKEN/,
+    )
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
-  it('GIVEN a bucket with no gallery images WHEN run THEN it refuses to write an empty manifest', async () => {
+  it('GIVEN a bucket with no gallery images WHEN running THEN it refuses to write an empty manifest', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ items: [{ name: 'readme.txt' }] }))
     const opts = options(fetchImpl)
 
@@ -143,7 +154,7 @@ describe('run', () => {
     await expect(readFile(opts.outputPath, 'utf-8')).rejects.toThrow()
   })
 
-  it('GIVEN galleries.json names a file the bucket lacks WHEN run THEN it warns about it', async () => {
+  it('GIVEN metadata names a file missing from the bucket WHEN running THEN it warns about the file', async () => {
     const metadataPath = join(dir, 'galleries.json')
     await writeFile(
       metadataPath,

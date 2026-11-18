@@ -20,12 +20,12 @@ const pageTitle = computed(() => (props.showPastEvents ? 'Past Events' : 'Upcomi
           :key="`empty-${showPastEvents}`"
           class="text-center py-12 opacity-70"
         >
-          <div class="text-h6 font-weight-light">
+          <div class="text-title-large font-weight-light">
             {{
               showPastEvents ? 'No past events to show.' : 'No upcoming events scheduled right now.'
             }}
           </div>
-          <div class="text-body-2 opacity-80 mt-1">
+          <div class="text-body-medium opacity-80 mt-1">
             Check back soon or send us a message via our contact page!
           </div>
         </div>
@@ -47,13 +47,13 @@ const pageTitle = computed(() => (props.showPastEvents ? 'Past Events' : 'Upcomi
                   <div class="event-date text-secondary font-weight-bold mb-1">
                     {{ event.date }}
                   </div>
-                  <div class="event-time text-body-1 font-weight-light opacity-80">
+                  <div class="event-time text-body-large font-weight-light opacity-80">
                     {{ event.time }}
                   </div>
                 </v-col>
                 <v-col cols="12" md="8" sm="9">
                   <div class="d-flex align-center flex-wrap gap-2 mb-1">
-                    <h3 class="event-title text-h5 font-weight-bold tracking-tight">
+                    <h3 class="event-title text-headline-small font-weight-bold tracking-tight">
                       {{ event.title }}
                     </h3>
                     <v-icon
@@ -64,7 +64,7 @@ const pageTitle = computed(() => (props.showPastEvents ? 'Past Events' : 'Upcomi
                       size="24"
                     ></v-icon>
                   </div>
-                  <div class="event-location text-body-1 opacity-80 font-weight-light">
+                  <div class="event-location text-body-large opacity-80 font-weight-light">
                     <span
                       v-if="isMappableLocation(event.location)"
                       :aria-label="`Open ${event.location} in Google Maps`"
@@ -80,7 +80,7 @@ const pageTitle = computed(() => (props.showPastEvents ? 'Past Events' : 'Upcomi
                   </div>
                   <p
                     v-if="event.description"
-                    class="body-copy text-body-1 font-weight-light opacity-90"
+                    class="body-copy text-body-large font-weight-light opacity-90"
                   >
                     {{ event.description }}
                   </p>

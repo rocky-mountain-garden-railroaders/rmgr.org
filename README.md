@@ -16,29 +16,77 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
+Use Node.js 24.15 or newer and pnpm 10.18.3, as pinned in `package.json`.
+If pnpm is not installed, substitute `npx pnpm@10.18.3` for `pnpm` in the
+commands below.
+
 ```sh
-npm install
+pnpm install
 ```
+
+Dependency updates respect the 14-day minimum release age configured in
+`pnpm-workspace.yaml`. Use `pnpm update` for updates within the declared version
+ranges and `pnpm audit` to check for known vulnerabilities.
+
+TypeScript stays on major version 6 because the current Vue type checker and
+TypeScript ESLint tooling do not support TypeScript 7. Node type definitions stay
+on major version 24 to match the runtime used in CI.
 
 ### Compile and Hot-Reload for Development
 
 ```sh
-npm run dev
+pnpm run dev
 ```
 
 ### Type-Check, Compile and Minify for Production
 
 ```sh
-npm run build
+pnpm run build
 ```
 
 ### Run Unit Tests with [Vitest](https://vitest.dev/)
 
 ```sh
-npm run test:unit
+pnpm run test:unit
 ```
 
 ### Gallery image metadata
+
+The gallery chooser downloads only featured covers as they enter the viewport.
+These covers (the first photo in each gallery) are the only photos requested
+before a gallery is selected. Opening a gallery mounts just its current slide;
+the remaining photos load one at a time through navigation or the existing
+five-second slideshow. Pause the slideshow to stop automatic photo downloads.
+Closing the viewer removes its media and stops the slideshow. Gallery imports
+contain asset URLs, not inlined photo or video data.
+
+MP4 files in published gallery folders appear after the photos, preserving the
+featured cover and curated photo order. When a selected slideshow reaches a video,
+it attempts muted inline autoplay, with native controls to play and unmute. If
+browser policy blocks autoplay, a prompt directs the user to the native Play
+control. Videos use `preload="none"` and are not mounted or requested for
+unselected galleries. Reaching a video pauses the slideshow; navigate to a photo
+and use Play slideshow to resume. Navigating away or closing stops playback.
+Videos fit the normal and fullscreen viewer without image zoom. MP4 is a
+container, not a codec guarantee; use H.264 video with AAC audio for broad browser
+support. A direct MP4 link and a playback error message are provided for failures.
+The gallery manifest lists 14 tracked, web-encoded MP4s: seven in Siwy, five in
+Mayhew, and two in Zoo Lights 2025. These copies use H.264/AAC, faststart, and at
+most 1280x720 (720x1280 portrait) without upscaling; they total 194,311,953 bytes.
+Keep original camera files outside the site assets. A clean checkout must contain
+all 14 manifest-listed videos for the gallery tests and build to match this
+workspace.
+The bucket manifest helper also recognizes MP4s, but
+the current app imports local assets; that helper is not a remote-video loader.
+
+Embedded photos open in a full-window image viewer. Where the browser supports
+fullscreen, embedded photo viewers and expanded galleries include a fullscreen
+toggle alongside their other controls. Exiting browser fullscreen returns to the
+image viewer; gallery navigation and slideshow controls remain available.
+In browser fullscreen, scroll over a photo to zoom in (up to 4x) or back out.
+Move the pointer over a zoomed photo to explore its edges. Zoom resets when the
+photo changes, the viewer closes, or fullscreen ends. Zooming pauses the gallery
+slideshow; use Play to resume it.
 
 To identify photos while reorganizing the manifest, open
 `/gallery?galleryDebug=true`. The slideshow displays the original filename below
@@ -46,7 +94,11 @@ each photo, including photos without captions. Remove the flag to hide filenames
 they are hidden by default.
 
 `src/assets/images/galleries/galleries.json` lists the supported photos in each
-gallery subfolder. Keep these entries in sync with the files on disk; omit videos.
+gallery subfolder. Keep these photo entries in sync with the files on disk.
+MP4s are discovered automatically; list published compressed copies with their alt
+text and optional captions under their filenames in the existing `images` metadata
+map, after the photos. File extensions produce the typed image/video model used by
+the slideshow; videos are never passed to image components.
 Only folders listed in the manifest are published. Omit a gallery entry to keep
 it unpublished without deleting its photos; Supertrain 2026 is currently omitted
 until more photos are available.
@@ -71,26 +123,54 @@ newest first. Update these priorities as new galleries are added.
 
 ```sh
 # Install browsers for the first run
-npx playwright install
+pnpm exec playwright install
 
 # When testing on CI, must build the project first
-npm run build
+pnpm run build
 
 # Runs the end-to-end tests
-npm run test:e2e
+pnpm run test:e2e
 # Runs the tests only on Chromium
-npm run test:e2e -- --project=chromium
+pnpm run test:e2e --project=chromium
 # Runs the tests of a specific file
-npm run test:e2e -- tests/example.spec.ts
+pnpm run test:e2e tests/example.spec.ts
 # Runs the tests in debug mode
-npm run test:e2e -- --debug
+pnpm run test:e2e --debug
 ```
+
+### License
+
+The MIT License in `LICENSE` applies to the website's source code only. It does
+not apply to third-party assets or content in this repository; those remain
+subject to their own terms.
+
+Some original written content and photos or other materials may be available
+under CC BY 4.0 only where RMGR owns them or has authority to license them.
+See [`CONTENT-LICENSE.md`](CONTENT-LICENSE.md) for the scope and attribution
+terms. No third-party or unclear-rights content is covered by this notice.
+
+`e2e/gallery-video.spec.ts` exercises the manifest-listed mixed galleries with
+actual compressed MP4s: discovery, playback, fullscreen, navigation, closing,
+and network gating at desktop and mobile viewport sizes. Rebuild before testing
+the production preview so it includes the current video assets.
+
+### Pull request checks
+
+The GitHub Actions `build` check installs dependencies from the frozen pnpm
+lockfile, type-checks and builds the site. On pull requests only, it also runs all
+Vitest tests and Playwright tests in Chromium, Firefox, and WebKit. Browser tests
+still run if unit tests fail. Playwright reports and traces are retained as
+workflow artifacts for seven days. Pushes (including merges), scheduled runs,
+and manual runs build without rerunning tests; successful builds on `main` deploy.
+
+The `main` ruleset requires the `build` check to pass with the branch up to date
+before merging. Organization administrators currently have a ruleset bypass.
 
 ### Lint with [ESLint](https://eslint.org/)
 
 ```sh
-npm run lint
+pnpm run lint
 ```
 
-Pull requests also run `npm run lint:check` in the GitHub Actions `build` check.
+Pull requests also run `pnpm run lint:check` in the GitHub Actions `build` check.
 This checks Oxlint and ESLint without applying fixes.
